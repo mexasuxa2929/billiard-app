@@ -1,0 +1,41 @@
+name: Windows installer (MSI + EXE)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (Temurin, jpackage bilan)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Testlar
+        run: ./gradlew.bat :shared:jvmTest
+
+      - name: MSI + EXE yig'ish
+        run: ./gradlew.bat :desktopApp:packageMsi :desktopApp:packageExe
+
+      - name: Artifact yuklash (MSI)
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: desktopApp/build/compose/binaries/main/msi/*.msi
+
+      - name: Artifact yuklash (EXE)
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: desktopApp/build/compose/binaries/main/exe/*.exe
