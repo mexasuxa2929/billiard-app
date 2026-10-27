@@ -64,7 +64,11 @@ fun HistoryScreen(vm: AppViewModel) {
                             Text("[${l.type}] ${l.description}", color = Pro.TextMain, fontSize = 12.sp)
                             Text(formatTime(l.timestamp), color = Pro.TextFaint, fontSize = 11.sp)
                         }
-                        if (l.amount != 0.0) Text(formatMoney(l.amount), color = Pro.Green, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        if (l.amount != 0.0) Text(
+                            formatMoney(l.amount),
+                            color = if (l.type == "EXPENSE") Pro.Red else Pro.Green,
+                            fontWeight = FontWeight.Bold, fontSize = 12.sp
+                        )
                     }
                 }
             }

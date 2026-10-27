@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.mexa.clube.ui.components.SideMenu
 import org.mexa.clube.ui.screens.BarScreen
+import org.mexa.clube.ui.screens.ExpensesScreen
 import org.mexa.clube.ui.screens.HistoryScreen
 import org.mexa.clube.ui.screens.ReportsScreen
 import org.mexa.clube.ui.screens.SettingsScreen
@@ -52,8 +53,9 @@ fun App(vm: AppViewModel) {
                         0 -> TablesScreen(vm)
                         1 -> BarScreen(vm)
                         2 -> ReportsScreen(vm)
-                        3 -> HistoryScreen(vm)
-                        4 -> SettingsScreen(vm)
+                        3 -> ExpensesScreen(vm)
+                        4 -> HistoryScreen(vm)
+                        5 -> SettingsScreen(vm)
                     }
                 }
             }

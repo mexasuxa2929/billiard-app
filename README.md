@@ -23,17 +23,34 @@ Bilyard xonasini boshqarish uchun desktop app.
 - Qidiruv, kirim (`+` omborga), tahrirlash, o'chirish.
 - `To'g'ridan-to'g'ri savdo` — stolsiz mijozga sotish (alohida chek + jurnal).
 
+### 💸 Xarajatlar
+- Xarajat qo'shish: **sababi** (majburiy), kategoriya, summa, to'lov turi, sana va izoh.
+- Kategoriyalar: Oylik, Ijara, Kommunal, Ta'mirlash, Mahsulot, Transport, Boshqa.
+- Ro'yxatda qidiruv, kategoriya bo'yicha filtr, tahrirlash va o'chirish.
+- Kunlik / oylik / umumiy xarajat summasi ko'rsatiladi.
+
 ### 📊 Hisobotlar
 - **Kunlik / Haftalik / Oylik / Jami** tablar.
-- Kartalar: Stol daromadi, Bar savdo, Bar foydasi (sotish−kirish), JAMI.
+- Kartalar: Stol daromadi, Bar savdo, Bar foydasi (sotish−kirish), JAMI daromad,
+  Xarajatlar va Sof foyda.
 - Sessiyalar soni, chegirmalar, TOP-10 mahsulot, cheklar ro'yxati.
+
+**Hisobot qoidasi (chalkashmasligi uchun):**
+- **Stollar** kartasi — faqat vaqt puli (`tableSum`).
+- **Bar savdo/foyda** — barcha bar savdosi: to'g'ridan-to'g'ri savdo **va** stolga biriktirilgan savdo.
+  Stoldagi savdo faqat **stol yopilganda** hisobga olinadi (to'lov o'sha paytda olinadi),
+  bekor qilingan sessiyalarning savdosi esa hisobotga kirmaydi.
+- **JAMI daromad = Stollar + Bar savdo − chegirma.** Stol kartasidagi jami summada bar bo'lsa ham,
+  u bar qatorida bir marta hisoblanadi — ikki marta qo'shilmaydi.
+- **Sof foyda = JAMI daromad − xarajatlar.**
+- Hisobotda "stolga" va "alohida" savdo yorliqlari ko'rsatiladi, Excelda ham shu taqsimot bor.
 
 ### 🧾 Chek
 - Chiroyli matnli chek: klub nomi, stol, davomiylik, tarif, bar pozitsiyalari, chegirma, JAMI.
 - **Chop etish** (PrinterJob dialog) + **faylga saqlash** (.txt).
 
 ### 🧾 Tarix / Jurnal
-- Barcha harakatlar `logs` jadvalida: TABLE_START/STOP, BAR_SALE, PRODUCT, SYSTEM — summa bilan.
+- Barcha harakatlar `logs` jadvalida: TABLE_START/STOP, BAR_SALE, PRODUCT, EXPENSE, SYSTEM — summa bilan.
 
 ### ⚙️ Sozlamalar
 - Klub nomi, standart soatlik narx. Birinchi ishga tushishda 6 ta stol + 4 demo mahsulot avtomatik yaratiladi.
@@ -63,13 +80,13 @@ BILLIARD_DB=/home/user/baza.db ./gradlew :desktopApp:run
 
 Tanlangan yo'l `~/.billiardapp/db_path.txt` da saqlanadi. Fayl topilmasa yoki o'qilmasa,
 dastur xavfsiz tarzda standart joyga qaytadi. Tanlashdan oldin fayl tekshiriladi:
-SQLite sarlavhasi, `PRAGMA user_version` (1..3) va `tables` jadvali mavjudligi.
+SQLite sarlavhasi, `PRAGMA user_version` (1..4) va `tables` jadvali mavjudligi.
 
 ## Loyiha strukturasi
 
 ```
-shared/src/commonMain/.../data/entity/Entities.kt   — 8 ta Room entity
-shared/src/commonMain/.../data/dao/Daos.kt          — 7 ta DAO (Flow + suspend)
+shared/src/commonMain/.../data/entity/Entities.kt   — 11 ta Room entity
+shared/src/commonMain/.../data/dao/Daos.kt          — 10 ta DAO (Flow + suspend)
 shared/src/commonMain/.../data/BilliardDatabase.kt  — RoomDatabase
 shared/src/commonMain/.../data/DatabaseBuilder.kt   — expect + BundledSQLiteDriver (TRUNCATE)
 shared/src/jvmMain/.../data/DatabaseBuilder.jvm.kt  — DatabaseLocation.activePath() (actual)

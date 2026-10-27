@@ -13,6 +13,7 @@ import org.mexa.clube.data.entity.BilliardTable
 import org.mexa.clube.data.entity.Booking
 import org.mexa.clube.data.entity.Category
 import org.mexa.clube.data.entity.CheckReceipt
+import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.MovementLog
 import org.mexa.clube.data.entity.Product
 import org.mexa.clube.data.entity.TableSession
@@ -109,8 +110,38 @@ interface BarSaleDao {
     @Query("SELECT * FROM bar_sales WHERE sessionId = :sessionId")
     suspend fun getBySession(sessionId: Long): List<BarSale>
 
-    @Query("SELECT * FROM bar_sales WHERE createdAt >= :from AND createdAt < :to ORDER BY createdAt DESC")
-    suspend fun getBetween(from: Long, to: Long): List<BarSale>
+    /**
+     * Hisobot uchun savdolar. To'g'ridan-to'g'ri savdo to'lov qilingan paytda ([createdAt]),
+     * stolga biriktirilgan savdo esa stol yopilgan paytda ([closedAt]) daromadga kiradi.
+     * Bekor qilingan sessiyalarning savdolari hisobotga umuman kirmaydi.
+     */
+    @Query(
+        """
+        SELECT * FROM bar_sales
+        WHERE status != 'CANCELLED'
+          AND (
+            (sessionId IS NULL AND createdAt >= :from AND createdAt < :to)
+            OR (sessionId IS NOT NULL AND closedAt >= :from AND closedAt < :to)
+          )
+        ORDER BY createdAt DESC
+        """
+    )
+    suspend fun getForReport(from: Long, to: Long): List<BarSale>
+
+    /** Sessiya yopilganda unga biriktirilgan barcha savdolarni "to'langan" deb belgilaydi. */
+    @Query("UPDATE bar_sales SET status = 'CLOSED', closedAt = :closedAt WHERE sessionId = :sessionId AND status = 'OPEN'")
+    suspend fun closeForSession(sessionId: Long, closedAt: Long)
+
+    /** Sessiya bekor qilinsa — savdolar hisobotdan chiqariladi (stok allaqachon qaytarilgan). */
+    @Query("UPDATE bar_sales SET status = 'CANCELLED', closedAt = :closedAt WHERE sessionId = :sessionId AND status != 'CANCELLED'")
+    suspend fun cancelForSession(sessionId: Long, closedAt: Long)
+
+    /** Eski bazadagi, sessiyaga biriktirilgan, lekin yopilish vaqti yozilmagan savdolar. */
+    @Query("SELECT * FROM bar_sales WHERE sessionId IS NOT NULL AND closedAt IS NULL")
+    suspend fun getAttachedWithoutCloseTime(): List<BarSale>
+
+    @Query("UPDATE bar_sales SET status = :status, closedAt = :closedAt WHERE id = :id")
+    suspend fun markSaleStatus(id: Long, status: String, closedAt: Long?)
 
     @Query("SELECT * FROM bar_sale_items WHERE saleId IN (:saleIds)")
     suspend fun getItemsBySaleIds(saleIds: List<Long>): List<BarSaleItem>
@@ -188,6 +219,24 @@ interface CategoryDao {
     suspend fun update(category: Category)
 
     @Query("DELETE FROM categories WHERE id = :id")
+    suspend fun deleteById(id: Long)
+}
+
+@Dao
+interface ExpenseDao {
+    @Query("SELECT * FROM expenses ORDER BY spentAt DESC, id DESC")
+    fun observeAll(): Flow<List<Expense>>
+
+    @Query("SELECT * FROM expenses WHERE spentAt >= :from AND spentAt < :to ORDER BY spentAt DESC, id DESC")
+    suspend fun getBetween(from: Long, to: Long): List<Expense>
+
+    @Query("SELECT * FROM expenses WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): Expense?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(expense: Expense): Long
+
+    @Query("DELETE FROM expenses WHERE id = :id")
     suspend fun deleteById(id: Long)
 }
 

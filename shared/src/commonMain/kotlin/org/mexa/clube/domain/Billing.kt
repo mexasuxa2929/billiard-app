@@ -156,8 +156,20 @@ data class ReportSummary(
     val barRevenue: Double = 0.0,
     val barCost: Double = 0.0,
     val barProfit: Double = 0.0,
+    /** Bar savdodan stolga biriktirilgan qismi (sessiya yopilganda hisobga olinadi). */
+    val barTableRevenue: Double = 0.0,
+    val barTableCost: Double = 0.0,
+    val barTableProfit: Double = 0.0,
+    /** Bar savdodan to'g'ridan-to'g'ri (stolsiz) savdo qismi. */
+    val barDirectRevenue: Double = 0.0,
+    val barDirectCost: Double = 0.0,
+    val barDirectProfit: Double = 0.0,
     val discount: Double = 0.0,
     val totalRevenue: Double = 0.0,
+    /** Davr ichidagi xarajatlar yig'indisi. */
+    val expenses: Double = 0.0,
+    /** Sof foyda = JAMI daromad − xarajatlar. */
+    val netProfit: Double = 0.0,
     val topProducts: List<TopProduct> = emptyList()
 )
 

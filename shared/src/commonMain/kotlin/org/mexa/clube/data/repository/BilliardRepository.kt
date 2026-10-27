@@ -10,6 +10,7 @@ import org.mexa.clube.data.entity.BilliardTable
 import org.mexa.clube.data.entity.Booking
 import org.mexa.clube.data.entity.Category
 import org.mexa.clube.data.entity.CheckReceipt
+import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.MovementLog
 import org.mexa.clube.data.entity.Product
 import org.mexa.clube.data.entity.TableSession
@@ -28,6 +29,7 @@ class BilliardRepository(
     val openSessions: Flow<List<TableSession>> = db.sessionDao().observeOpenSessions()
     val categories: Flow<List<Category>> = db.categoryDao().observeCategories()
     val bookings: Flow<List<Booking>> = db.bookingDao().observeActive()
+    val expenses: Flow<List<Expense>> = db.expenseDao().observeAll()
 
     // ---------- Categories ----------
     suspend fun addCategory(rawName: String) {
@@ -182,6 +184,9 @@ class BilliardRepository(
             totalSum = total
         )
         db.sessionDao().update(closed)
+        // Stolga yozilgan bar savdolari shu paytda to'langan hisoblanadi:
+        // hisobotda ular stol yopilgan kunga kiradi va bir marta hisoblanadi.
+        db.barSaleDao().closeForSession(session.id, now)
         val details = "Stol:${tableCost.toLong()} Bar:${barSell.toLong()} Chegirma:${discount.toLong()}"
         val check = CheckReceipt(
             sessionId = session.id,
@@ -207,7 +212,10 @@ class BilliardRepository(
             val items = db.barSaleDao().getItemsBySaleIds(sales.map { it.id })
             items.forEach { db.productDao().increaseStock(it.productId, it.qty) }
         }
-        db.sessionDao().update(session.copy(status = "CANCELLED", endTime = currentMillis()))
+        val now = currentMillis()
+        db.sessionDao().update(session.copy(status = "CANCELLED", endTime = now))
+        // Stok qaytarilgan savdo hisobotda bar daromadi/foydasi bo'lib qolmasligi kerak.
+        db.barSaleDao().cancelForSession(session.id, now)
         log("TABLE_STOP", "${session.tableName} sessiya bekor qilindi", 0.0)
     }
 
@@ -298,16 +306,58 @@ class BilliardRepository(
         log("BAR_SALE", "Bar pozitsiya o'chirildi: ${item.productName} x${item.qty} (stokga qaytdi)", 0.0)
     }
 
+    // ---------- Expenses (xarajatlar) ----------
+    suspend fun saveExpense(expense: Expense): Long {
+        require(expense.reason.trim().isNotBlank()) { "Xarajat sababi kiritilishi shart" }
+        require(expense.amount > 0.0) { "Xarajat summasi 0 dan katta bo'lishi kerak" }
+        val saved = expense.copy(
+            reason = expense.reason.trim(),
+            category = expense.category.trim().ifBlank { "Boshqa" },
+            note = expense.note.trim()
+        )
+        val id = db.expenseDao().upsert(saved)
+        val action = if (expense.id == 0L) "qo'shildi" else "yangilandi"
+        log("EXPENSE", "Xarajat $action: ${saved.reason} (${saved.category})", saved.amount)
+        return if (saved.id == 0L) id else saved.id
+    }
+
+    suspend fun deleteExpense(id: Long) {
+        val expense = db.expenseDao().getById(id)
+        db.expenseDao().deleteById(id)
+        if (expense != null) log("EXPENSE", "Xarajat o'chirildi: ${expense.reason}", expense.amount)
+    }
+
+    suspend fun expensesBetween(from: Long, to: Long): List<Expense> = db.expenseDao().getBetween(from, to)
+
     // ---------- Reports ----------
     suspend fun report(from: Long, to: Long): ReportSummary {
         val sessions = db.sessionDao().getBetween(from, to).filter { it.status == "CLOSED" }
-        val sales = db.barSaleDao().getBetween(from, to)
+        // To'g'ridan-to'g'ri savdo — sotilgan paytda, stolga biriktirilgan savdo — stol yopilganda.
+        // Bekor qilingan sessiyalarning savdolari hisobotga kirmaydi.
+        val sales = db.barSaleDao().getForReport(from, to)
         val items = if (sales.isEmpty()) emptyList() else db.barSaleDao().getItemsBySaleIds(sales.map { it.id })
+        val salesById = sales.associateBy { it.id }
         val tableRev = sessions.sumOf { it.tableSum }
         val discount = sessions.sumOf { it.discount }
-        // Bar revenue: sessiyaga bog'langan + to'g'ridan-to'g'ri — barchasi sales ichida
-        val barRev = items.sumOf { it.sellPrice * it.qty }
-        val barCost = items.sumOf { it.buyPrice * it.qty }
+        val expenseTotal = db.expenseDao().getBetween(from, to).sumOf { it.amount }
+
+        var barTableRev = 0.0
+        var barTableCost = 0.0
+        var barDirectRev = 0.0
+        var barDirectCost = 0.0
+        items.forEach { item ->
+            val sell = item.sellPrice * item.qty
+            val buy = item.buyPrice * item.qty
+            if (salesById[item.saleId]?.sessionId != null) {
+                barTableRev += sell
+                barTableCost += buy
+            } else {
+                barDirectRev += sell
+                barDirectCost += buy
+            }
+        }
+        val barRev = barTableRev + barDirectRev
+        val barCost = barTableCost + barDirectCost
         val grouped = items.groupBy { it.productName }.map { (name, list) ->
             TopProduct(name, list.sumOf { it.qty }, list.sumOf { it.sellPrice * it.qty })
         }.sortedByDescending { it.revenue }.take(10)
@@ -318,10 +368,35 @@ class BilliardRepository(
             barRevenue = barRev,
             barCost = barCost,
             barProfit = barRev - barCost,
+            barTableRevenue = barTableRev,
+            barTableCost = barTableCost,
+            barTableProfit = barTableRev - barTableCost,
+            barDirectRevenue = barDirectRev,
+            barDirectCost = barDirectCost,
+            barDirectProfit = barDirectRev - barDirectCost,
             discount = discount,
             totalRevenue = tableRev + barRev - discount,
+            expenses = expenseTotal,
+            netProfit = tableRev + barRev - discount - expenseTotal,
             topProducts = grouped
         )
+    }
+
+    /**
+     * Eski bazalarni yangilash: ilgari stolga biriktirilgan savdolarda `closedAt` yozilmagan.
+     * Yopilgan sessiyalar uchun savdo yopilish vaqtiga, bekor qilinganlar uchun CANCELLED ga o'tkaziladi.
+     */
+    suspend fun reconcileBarSales() {
+        val pending = db.barSaleDao().getAttachedWithoutCloseTime()
+        for (sale in pending) {
+            val sessionId = sale.sessionId ?: continue
+            val session = db.sessionDao().getById(sessionId) ?: continue
+            val at = session.endTime ?: continue
+            when (session.status) {
+                "CLOSED" -> db.barSaleDao().markSaleStatus(sale.id, "CLOSED", at)
+                "CANCELLED" -> db.barSaleDao().markSaleStatus(sale.id, "CANCELLED", at)
+            }
+        }
     }
 
     suspend fun checksBetween(from: Long, to: Long): List<CheckReceipt> = db.checkDao().getBetween(from, to)

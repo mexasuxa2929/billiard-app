@@ -17,6 +17,7 @@ import org.mexa.clube.data.entity.BilliardTable
 import org.mexa.clube.data.entity.Booking
 import org.mexa.clube.data.entity.Category
 import org.mexa.clube.data.entity.CheckReceipt
+import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.MovementLog
 import org.mexa.clube.data.entity.Product
 import org.mexa.clube.data.entity.TableSession
@@ -62,6 +63,8 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
     val sessionBars: StateFlow<Map<Long, List<BarSaleItem>>> = _sessionBars.asStateFlow()
 
     val bookings: StateFlow<List<Booking>> = repo.bookings
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val expenses: StateFlow<List<Expense>> = repo.expenses
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // StolId -> oxirgi yopilgan sessiya (bo'sh karta uchun)
@@ -163,12 +166,15 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
                 clubName.value = repo.getSetting("club_name", "BILLIARD CLUB")
                 defaultPrice.value = repo.getSetting("default_price", "60000").toDoubleOrNull() ?: 60000.0
                 repo.ensureSeed(defaultPrice.value)
+                // Eski bazadagi stol savdolarini yangi hisobot qoidasiga moslaymiz.
+                repo.reconcileBarSales()
                 val now = currentMillis()
                 shiftStart.value = repo.getOrCreateShiftStart(startOfDay(now) + 10L * 3600 * 1000)
                 exportDir.value = repo.getSetting("export_dir", "")
             } catch (e: Exception) {
                 _error.value = "DB xato (seed): ${e.message}"
             }
+            loadReport(0)
         }
         // Har soniyada timer yangilash + tables/openSessions o'zgarishini kuzatish
         viewModelScope.launch {
@@ -212,7 +218,6 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
             refreshSessionBars()
             refreshLastClosed()
         }
-        viewModelScope.launch { loadReport(0) }
     }
 
     fun refreshSessionBars() = viewModelScope.launch {
@@ -284,7 +289,6 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
         viewModelScope.launch {
             try {
                 val check = repo.closeSession(tableId, discount, payment, clubName.value)
-                val session = repo.report(0, 1) // dummy to keep flow
                 // check matnini tayyorlash
                 val items = if (check.sessionId != null) repo.barItemsForSession(check.sessionId!!) else emptyList()
                 // sessiya ma'lumotini topish uchun oxirgi yopilganlar orasidan
@@ -381,6 +385,23 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
                 onDone(check)
             } catch (e: Exception) { _error.value = e.message }
         }
+
+    /** Xarajatni saqlash (id = 0 bo'lsa yangi). */
+    fun saveExpense(expense: Expense, onDone: () -> Unit = {}) = viewModelScope.launch {
+        try {
+            repo.saveExpense(expense)
+            loadReport(0)
+            onDone()
+        } catch (e: Exception) { _error.value = e.message }
+    }
+
+    fun deleteExpense(id: Long, onDone: () -> Unit = {}) = viewModelScope.launch {
+        try {
+            repo.deleteExpense(id)
+            loadReport(0)
+            onDone()
+        } catch (e: Exception) { _error.value = e.message }
+    }
 
     fun deleteBarItem(item: BarSaleItem, onDone: () -> Unit = {}) = viewModelScope.launch {
         try {

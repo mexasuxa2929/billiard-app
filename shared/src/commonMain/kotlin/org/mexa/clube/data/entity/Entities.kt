@@ -109,10 +109,24 @@ data class CheckReceipt(
 data class MovementLog(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val timestamp: Long,
-    val type: String, // TABLE_START, TABLE_STOP, BAR_SALE, PRODUCT, SYSTEM
+    val type: String, // TABLE_START, TABLE_STOP, BAR_SALE, PRODUCT, EXPENSE, SYSTEM
     val description: String,
     val amount: Double = 0.0
 )
+
+@Entity(tableName = "expenses")
+data class Expense(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val spentAt: Long,
+    /** Xarajat sababi (nima uchun sarflandi) — majburiy. */
+    val reason: String,
+    val category: String = "Boshqa",
+    val amount: Double = 0.0,
+    val paymentMethod: String = "Naqd",
+    val note: String = ""
+)
+
+val EXPENSE_CATEGORIES = listOf("Oylik", "Ijara", "Kommunal", "Ta'mirlash", "Mahsulot", "Transport", "Boshqa")
 
 @Entity(tableName = "settings")
 data class AppSetting(

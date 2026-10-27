@@ -181,25 +181,52 @@ fun ReportsScreen(vm: AppViewModel) {
             if (m.compact) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatPro("🎱 Stollar", formatMoney(r.tableRevenue), Pro.Green, Modifier.weight(1f))
-                        StatPro("🍺 Bar savdo", formatMoney(r.barRevenue), Color(0xFF29B6F6), Modifier.weight(1f))
+                        StatPro("🎱 Stollar (vaqt)", formatMoney(r.tableRevenue), Pro.Green, Modifier.weight(1f))
+                        StatPro(
+                            "🍺 Bar savdo (jami)", formatMoney(r.barRevenue), Color(0xFF29B6F6), Modifier.weight(1f),
+                            subtitle = "stolga ${formatMoney(r.barTableRevenue)}"
+                        )
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatPro("💹 Bar foyda", formatMoney(r.barProfit), Pro.Amber, Modifier.weight(1f))
-                        StatPro("💰 JAMI", formatMoney(r.totalRevenue), Pro.Green, Modifier.weight(1f))
+                        StatPro(
+                            "💹 Bar foyda (jami)", formatMoney(r.barProfit), Pro.Amber, Modifier.weight(1f),
+                            subtitle = "stolga ${formatMoney(r.barTableProfit)}"
+                        )
+                        StatPro("💰 JAMI daromad", formatMoney(r.totalRevenue), Pro.Green, Modifier.weight(1f))
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatPro("💸 Xarajatlar", formatMoney(r.expenses), Pro.Red, Modifier.weight(1f))
+                        StatPro("📈 Sof foyda", formatMoney(r.netProfit), Pro.Green, Modifier.weight(1f))
                     }
                 }
             } else {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(m.cardSpacing)) {
-                    StatPro("🎱 Stollar", formatMoney(r.tableRevenue), Pro.Green, Modifier.weight(1f))
-                    StatPro("🍺 Bar savdo", formatMoney(r.barRevenue), Color(0xFF29B6F6), Modifier.weight(1f))
-                    StatPro("💹 Bar foyda", formatMoney(r.barProfit), Pro.Amber, Modifier.weight(1f))
-                    StatPro("💰 JAMI", formatMoney(r.totalRevenue), Pro.Green, Modifier.weight(1f))
+                    StatPro("🎱 Stollar (vaqt)", formatMoney(r.tableRevenue), Pro.Green, Modifier.weight(1f))
+                    StatPro(
+                        "🍺 Bar savdo (jami)", formatMoney(r.barRevenue), Color(0xFF29B6F6), Modifier.weight(1f),
+                        subtitle = "stolga ${formatMoney(r.barTableRevenue)} • alohida ${formatMoney(r.barDirectRevenue)}"
+                    )
+                    StatPro(
+                        "💹 Bar foyda (jami)", formatMoney(r.barProfit), Pro.Amber, Modifier.weight(1f),
+                        subtitle = "stolga ${formatMoney(r.barTableProfit)} • alohida ${formatMoney(r.barDirectProfit)}"
+                    )
+                    StatPro("💰 JAMI daromad", formatMoney(r.totalRevenue), Pro.Green, Modifier.weight(1f))
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(m.cardSpacing)) {
+                    StatPro("💸 Xarajatlar", formatMoney(r.expenses), Pro.Red, Modifier.weight(1f))
+                    StatPro("📈 Sof foyda", formatMoney(r.netProfit), Pro.Green, Modifier.weight(1f))
                 }
             }
             Text(
                 "Sessiyalar: ${r.sessionsCount} • Chegirmalar: ${formatMoney(r.discount)} • Bar tannarxi: ${formatMoney(r.barCost)}",
                 color = Pro.TextDim, fontSize = 12.sp
+            )
+            Text(
+                "Stollar — faqat vaqt puli. Bar savdo/foyda stolga biriktirilgan savdoni ham o'z ichiga oladi " +
+                    "(stol yopilganda hisobga olinadi, bekor qilingan sessiyalar kirmaydi). " +
+                    "JAMI daromad = Stollar + Bar savdo − chegirma; Sof foyda = JAMI daromad − xarajatlar. " +
+                    "Bar summasi ikki marta hisoblanmaydi.",
+                color = Pro.TextFaint, fontSize = 11.sp
             )
             if (m.compact) {
                 Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -326,11 +353,21 @@ private fun DateField(label: String, value: String, modifier: Modifier = Modifie
 }
 
 @Composable
-private fun StatPro(title: String, value: String, accent: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
+private fun StatPro(
+    title: String,
+    value: String,
+    accent: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null
+) {
     ProCard(modifier) {
         Column(Modifier.padding(14.dp)) {
             Text(title, color = Pro.TextDim, fontSize = 12.sp)
             Text(value, color = Pro.TextMain, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            if (subtitle != null) Text(
+                subtitle, color = Pro.TextFaint, fontSize = 10.sp,
+                maxLines = 2, overflow = TextOverflow.Ellipsis
+            )
             androidx.compose.foundation.layout.Box(
                 Modifier.height(3.dp).fillMaxWidth()
                     .background(accent.copy(alpha = 0.7f), androidx.compose.foundation.shape.RoundedCornerShape(2.dp))

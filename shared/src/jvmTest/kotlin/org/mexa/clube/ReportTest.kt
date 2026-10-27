@@ -8,6 +8,8 @@ import kotlinx.datetime.toLocalDateTime
 import org.mexa.clube.data.BilliardDatabase
 import org.mexa.clube.data.entity.BarSale
 import org.mexa.clube.data.entity.BarSaleItem
+import org.mexa.clube.data.entity.BilliardTable
+import org.mexa.clube.data.entity.Product
 import org.mexa.clube.data.entity.TableSession
 import org.mexa.clube.data.getRoomDatabase
 import org.mexa.clube.data.repository.BilliardRepository
@@ -170,6 +172,114 @@ class ReportTest {
         assertEquals(25000.0, r.tableRevenue)
     }
 
+    /**
+     * Stolga biriktirilgan bar savdo: ochiq stolda hisobotga kirmaydi,
+     * stol yopilganda bar daromadi/foydasiga qo'shiladi va JAMI da bir marta hisoblanadi.
+     */
+    @Test
+    fun tableBarSaleCountsOnlyAfterSessionClose() = runBlocking {
+        val db = newDb()
+        val repo = BilliardRepository(db)
+        val tableId = db.tableDao().upsert(BilliardTable(name = "Stol-1", hourlyPrice = 60000.0))
+        val productId = db.productDao().upsert(
+            Product(name = "Cola", buyPrice = 6000.0, sellPrice = 10000.0, stockQty = 10.0)
+        )
+
+        val session = repo.startSession(BilliardTable(id = tableId, name = "Stol-1", hourlyPrice = 60000.0))
+        repo.sellToTable(session.id, mapOf(productId to 2.0))
+
+        // Stol hali ochiq — bar savdo "kutilayotgan" hisoblanadi, hisobotga kirmaydi.
+        val before = repo.report(0, currentMillis() + DAY)
+        assertEquals(0.0, before.barRevenue)
+        assertEquals(0.0, before.barProfit)
+        assertEquals(0, before.sessionsCount)
+
+        val check = repo.closeSession(tableId)
+        assertEquals(20000.0, check.barAmount)
+
+        val after = repo.report(0, currentMillis() + DAY)
+        assertEquals(20000.0, after.barRevenue)
+        assertEquals(8000.0, after.barProfit)
+        assertEquals(20000.0, after.barTableRevenue)
+        assertEquals(8000.0, after.barTableProfit)
+        assertEquals(0.0, after.barDirectRevenue)
+        assertEquals(1, after.sessionsCount)
+        // JAMI = vaqt + bar − chegirma; bar summasi alohida qo'shilmaydi.
+        assertEquals(after.tableRevenue + 20000.0 - after.discount, after.totalRevenue)
+    }
+
+    /** Bekor qilingan sessiyaning bar savdosi hisobotga kirmaydi va stok qaytadi. */
+    @Test
+    fun cancelledSessionBarSaleIsExcluded() = runBlocking {
+        val db = newDb()
+        val repo = BilliardRepository(db)
+        val tableId = db.tableDao().upsert(BilliardTable(name = "Stol-1", hourlyPrice = 60000.0))
+        val productId = db.productDao().upsert(
+            Product(name = "Cola", buyPrice = 6000.0, sellPrice = 10000.0, stockQty = 10.0)
+        )
+
+        val session = repo.startSession(BilliardTable(id = tableId, name = "Stol-1", hourlyPrice = 60000.0))
+        repo.sellToTable(session.id, mapOf(productId to 2.0))
+        repo.cancelSession(tableId)
+
+        val r = repo.report(0, currentMillis() + DAY)
+        assertEquals(0.0, r.barRevenue)
+        assertEquals(0.0, r.barProfit)
+        assertEquals(0.0, r.totalRevenue)
+        assertEquals(0, r.sessionsCount)
+        assertEquals(10.0, db.productDao().getById(productId)?.stockQty ?: -1.0)
+    }
+
+    /** Stolga yozilgan savdo stol yopilgan kunga kiradi (buyurtma kuniga emas). */
+    @Test
+    fun tableBarSaleIsReportedOnCloseDay() = runBlocking {
+        val db = newDb()
+        val repo = BilliardRepository(db)
+        val base = startOfDay(currentMillis())
+        val sessionId = insertSession(
+            db, start = base - 1 * H, end = base + 1 * H, tableSum = 40000.0, discount = 0.0
+        )
+        insertSale(
+            db, createdAt = base - 1 * H,
+            sessionId = sessionId, closedAt = base + 1 * H, status = "CLOSED",
+            items = listOf(Triple("Cola", 1.0, 6000.0 to 10000.0))
+        )
+
+        val yesterday = repo.report(base - DAY, base)
+        assertEquals(0.0, yesterday.barRevenue)
+
+        val today = repo.report(base, base + DAY)
+        assertEquals(10000.0, today.barRevenue)
+        assertEquals(4000.0, today.barProfit)
+        assertEquals(10000.0, today.barTableRevenue)
+    }
+
+    /** Eski bazadagi (closedAt yozilmagan) stol savdolari ishga tushganda to'g'rilanadi. */
+    @Test
+    fun legacyTableBarSalesAreReconciled() = runBlocking {
+        val db = newDb()
+        val repo = BilliardRepository(db)
+        val base = startOfDay(currentMillis())
+        val sessionId = insertSession(
+            db, start = base + 10 * H, end = base + 11 * H, tableSum = 60000.0, discount = 0.0
+        )
+        insertSale(
+            db, createdAt = base + 10 * H,
+            sessionId = sessionId, closedAt = null, status = "OPEN",
+            items = listOf(Triple("Cola", 1.0, 6000.0 to 10000.0))
+        )
+
+        // Yangilashdan oldin eski savdo hisobotga kirmaydi.
+        assertEquals(0.0, repo.report(base, base + DAY).barRevenue)
+
+        repo.reconcileBarSales()
+
+        val r = repo.report(base, base + DAY)
+        assertEquals(10000.0, r.barRevenue)
+        assertEquals(4000.0, r.barProfit)
+        assertEquals(10000.0, r.barTableRevenue)
+    }
+
     /** Davr chegaralari invariantlari (kun/hafta/oy). */
     @Test
     fun periodBoundariesAreCorrect() {
@@ -203,30 +313,36 @@ class ReportTest {
         end: Long,
         tableSum: Double,
         discount: Double
-    ) {
-        db.sessionDao().upsert(
-            TableSession(
-                tableId = 1,
-                tableName = "Stol-1",
-                startTime = start,
-                endTime = end,
-                hourlyRate = 60000.0,
-                status = "CLOSED",
-                tableSum = tableSum,
-                barSum = 0.0,
-                discount = discount,
-                totalSum = tableSum - discount
-            )
+    ): Long = db.sessionDao().upsert(
+        TableSession(
+            tableId = 1,
+            tableName = "Stol-1",
+            startTime = start,
+            endTime = end,
+            hourlyRate = 60000.0,
+            status = "CLOSED",
+            tableSum = tableSum,
+            barSum = 0.0,
+            discount = discount,
+            totalSum = tableSum - discount
         )
-    }
+    )
 
     private suspend fun insertSale(
         db: BilliardDatabase,
         createdAt: Long,
-        items: List<Triple<String, Double, Pair<Double, Double>>>
-    ) {
+        items: List<Triple<String, Double, Pair<Double, Double>>>,
+        sessionId: Long? = null,
+        closedAt: Long? = null,
+        status: String = if (sessionId == null) "CLOSED" else "OPEN"
+    ): Long {
+        val totalBuy = items.sumOf { (_, qty, prices) -> prices.first * qty }
+        val totalSell = items.sumOf { (_, qty, prices) -> prices.second * qty }
         val saleId = db.barSaleDao().insertSale(
-            BarSale(sessionId = null, createdAt = createdAt, status = "CLOSED")
+            BarSale(
+                sessionId = sessionId, createdAt = createdAt, closedAt = closedAt,
+                status = status, totalBuy = totalBuy, totalSell = totalSell
+            )
         )
         db.barSaleDao().insertItems(
             items.map { (name, qty, prices) ->
@@ -236,5 +352,6 @@ class ReportTest {
                 )
             }
         )
+        return saleId
     }
 }

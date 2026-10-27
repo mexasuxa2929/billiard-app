@@ -46,12 +46,20 @@ actual object ExcelExporter {
             kv(s0, 0, "Davr (dan)", formatDate(from))
             kv(s0, 1, "Davr (gacha)", formatDate(to - 1))
             kv(s0, 2, "Sessiyalar soni", summary.sessionsCount.toDouble(), wb, moneyStyle)
-            kv(s0, 3, "Stol daromadi (so'm)", summary.tableRevenue, wb, moneyStyle)
-            kv(s0, 4, "Bar savdo (so'm)", summary.barRevenue, wb, moneyStyle)
+            kv(s0, 3, "Stol daromadi — faqat vaqt (so'm)", summary.tableRevenue, wb, moneyStyle)
+            kv(s0, 4, "Bar savdo — jami (so'm)", summary.barRevenue, wb, moneyStyle)
             kv(s0, 5, "Bar tannarx (so'm)", summary.barCost, wb, moneyStyle)
-            kv(s0, 6, "Bar foyda (so'm)", summary.barProfit, wb, moneyStyle)
+            kv(s0, 6, "Bar foyda — jami (so'm)", summary.barProfit, wb, moneyStyle)
             kv(s0, 7, "Chegirmalar (so'm)", summary.discount, wb, moneyStyle)
             kv(s0, 8, "JAMI daromad (so'm)", summary.totalRevenue, wb, moneyStyle)
+            // Bar savdo/foyda tarkibi: stolga biriktirilgan + to'g'ridan-to'g'ri.
+            // JAMI da bar summasi faqat bir marta hisoblanadi.
+            kv(s0, 9, "— shu jumladan stolga biriktirilgan bar savdo", summary.barTableRevenue, wb, moneyStyle)
+            kv(s0, 10, "— shu jumladan to'g'ridan-to'g'ri bar savdo", summary.barDirectRevenue, wb, moneyStyle)
+            kv(s0, 11, "— stolga biriktirilgan bar foyda", summary.barTableProfit, wb, moneyStyle)
+            kv(s0, 12, "— to'g'ridan-to'g'ri bar foyda", summary.barDirectProfit, wb, moneyStyle)
+            kv(s0, 13, "Xarajatlar (so'm)", summary.expenses, wb, moneyStyle)
+            kv(s0, 14, "Sof foyda (so'm)", summary.netProfit, wb, moneyStyle)
             s0.setColumnWidth(0, 22 * 256)
             s0.setColumnWidth(1, 24 * 256)
 
