@@ -11,6 +11,7 @@ import org.mexa.clube.data.dao.CategoryDao
 import org.mexa.clube.data.dao.CheckDao
 import org.mexa.clube.data.dao.ExpenseDao
 import org.mexa.clube.data.dao.LogDao
+import org.mexa.clube.data.dao.NoteDao
 import org.mexa.clube.data.dao.ProductDao
 import org.mexa.clube.data.dao.SessionDao
 import org.mexa.clube.data.dao.SettingsDao
@@ -24,6 +25,7 @@ import org.mexa.clube.data.entity.Category
 import org.mexa.clube.data.entity.CheckReceipt
 import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.MovementLog
+import org.mexa.clube.data.entity.Note
 import org.mexa.clube.data.entity.Product
 import org.mexa.clube.data.entity.TableSession
 
@@ -39,13 +41,15 @@ import org.mexa.clube.data.entity.TableSession
         AppSetting::class,
         Category::class,
         Booking::class,
-        Expense::class
+        Expense::class,
+        Note::class
     ],
-    version = 4,
+    version = 5,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
-        AutoMigration(from = 3, to = 4)
+        AutoMigration(from = 3, to = 4),
+        AutoMigration(from = 4, to = 5)
     ],
     exportSchema = true
 )
@@ -61,12 +65,13 @@ abstract class BilliardDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun bookingDao(): BookingDao
     abstract fun expenseDao(): ExpenseDao
+    abstract fun noteDao(): NoteDao
 
     companion object {
         const val DB_NAME = "billiard_club.db"
 
         /** Joriy sxema versiyasi (Room `version` bilan bir xil bo'lishi shart). */
-        const val DB_VERSION = 4
+        const val DB_VERSION = 5
     }
 }
 

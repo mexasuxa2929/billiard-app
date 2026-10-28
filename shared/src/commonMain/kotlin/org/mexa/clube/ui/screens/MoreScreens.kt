@@ -66,7 +66,11 @@ fun HistoryScreen(vm: AppViewModel) {
                         }
                         if (l.amount != 0.0) Text(
                             formatMoney(l.amount),
-                            color = if (l.type == "EXPENSE") Pro.Red else Pro.Green,
+                            color = when (l.type) {
+                                "EXPENSE" -> Pro.Red
+                                "NOTE" -> Pro.Amber
+                                else -> Pro.Green
+                            },
                             fontWeight = FontWeight.Bold, fontSize = 12.sp
                         )
                     }

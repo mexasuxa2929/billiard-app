@@ -15,6 +15,7 @@ import org.mexa.clube.data.entity.Category
 import org.mexa.clube.data.entity.CheckReceipt
 import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.MovementLog
+import org.mexa.clube.data.entity.Note
 import org.mexa.clube.data.entity.Product
 import org.mexa.clube.data.entity.TableSession
 
@@ -237,6 +238,21 @@ interface ExpenseDao {
     suspend fun upsert(expense: Expense): Long
 
     @Query("DELETE FROM expenses WHERE id = :id")
+    suspend fun deleteById(id: Long)
+}
+
+@Dao
+interface NoteDao {
+    @Query("SELECT * FROM notes ORDER BY noteDate DESC, id DESC")
+    fun observeAll(): Flow<List<Note>>
+
+    @Query("SELECT * FROM notes WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): Note?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(note: Note): Long
+
+    @Query("DELETE FROM notes WHERE id = :id")
     suspend fun deleteById(id: Long)
 }
 

@@ -23,6 +23,7 @@ import org.mexa.clube.ui.components.SideMenu
 import org.mexa.clube.ui.screens.BarScreen
 import org.mexa.clube.ui.screens.ExpensesScreen
 import org.mexa.clube.ui.screens.HistoryScreen
+import org.mexa.clube.ui.screens.NotesScreen
 import org.mexa.clube.ui.screens.ReportsScreen
 import org.mexa.clube.ui.screens.SettingsScreen
 import org.mexa.clube.ui.screens.TablesScreen
@@ -54,8 +55,9 @@ fun App(vm: AppViewModel) {
                         1 -> BarScreen(vm)
                         2 -> ReportsScreen(vm)
                         3 -> ExpensesScreen(vm)
-                        4 -> HistoryScreen(vm)
-                        5 -> SettingsScreen(vm)
+                        4 -> NotesScreen(vm)
+                        5 -> HistoryScreen(vm)
+                        6 -> SettingsScreen(vm)
                     }
                 }
             }

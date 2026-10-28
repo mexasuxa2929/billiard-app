@@ -12,6 +12,7 @@ import org.mexa.clube.data.entity.Category
 import org.mexa.clube.data.entity.CheckReceipt
 import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.MovementLog
+import org.mexa.clube.data.entity.Note
 import org.mexa.clube.data.entity.Product
 import org.mexa.clube.data.entity.TableSession
 import org.mexa.clube.domain.Billing
@@ -30,6 +31,7 @@ class BilliardRepository(
     val categories: Flow<List<Category>> = db.categoryDao().observeCategories()
     val bookings: Flow<List<Booking>> = db.bookingDao().observeActive()
     val expenses: Flow<List<Expense>> = db.expenseDao().observeAll()
+    val notes: Flow<List<Note>> = db.noteDao().observeAll()
 
     // ---------- Categories ----------
     suspend fun addCategory(rawName: String) {
@@ -328,6 +330,27 @@ class BilliardRepository(
     }
 
     suspend fun expensesBetween(from: Long, to: Long): List<Expense> = db.expenseDao().getBetween(from, to)
+
+    // ---------- Notes (zametkalar) ----------
+    suspend fun saveNote(note: Note): Long {
+        require(note.reason.trim().isNotBlank()) { "Zametka sababi kiritilishi shart" }
+        require(note.amount >= 0.0) { "Summa manfiy bo'lishi mumkin emas" }
+        val saved = note.copy(
+            reason = note.reason.trim(),
+            note = note.note.trim(),
+            createdAt = if (note.id == 0L) currentMillis() else note.createdAt
+        )
+        val id = db.noteDao().upsert(saved)
+        val action = if (note.id == 0L) "qo'shildi" else "yangilandi"
+        log("NOTE", "Zametka $action: ${saved.reason}", saved.amount)
+        return if (saved.id == 0L) id else saved.id
+    }
+
+    suspend fun deleteNote(id: Long) {
+        val note = db.noteDao().getById(id)
+        db.noteDao().deleteById(id)
+        if (note != null) log("NOTE", "Zametka o'chirildi: ${note.reason}", note.amount)
+    }
 
     // ---------- Reports ----------
     suspend fun report(from: Long, to: Long): ReportSummary {

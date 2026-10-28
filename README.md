@@ -29,6 +29,13 @@ Bilyard xonasini boshqarish uchun desktop app.
 - Ro'yxatda qidiruv, kategoriya bo'yicha filtr, tahrirlash va o'chirish.
 - Kunlik / oylik / umumiy xarajat summasi ko'rsatiladi.
 
+### 📝 Zametkalar
+- Zametka qo'shish: **sana**, **sabab** (majburiy) va **qancha pul** + ixtiyoriy izoh.
+- Ro'yxatda qidiruv, «Kelayotgan / O'tgan» filtri, tahrirlash va **o'chirish**.
+- Yuqorida kelayotgan zametkalar soni va umumiy summasi ko'rsatiladi.
+- Summa kiritilmasa ham bo'ladi — oddiy eslatma sifatida saqlanadi.
+- Zametkalar hisobot daromadiga ta'sir qilmaydi (bu eslatma daftari, xarajat emas).
+
 ### 📊 Hisobotlar
 - **Kunlik / Haftalik / Oylik / Jami** tablar.
 - Kartalar: Stol daromadi, Bar savdo, Bar foydasi (sotish−kirish), JAMI daromad,
@@ -50,7 +57,7 @@ Bilyard xonasini boshqarish uchun desktop app.
 - **Chop etish** (PrinterJob dialog) + **faylga saqlash** (.txt).
 
 ### 🧾 Tarix / Jurnal
-- Barcha harakatlar `logs` jadvalida: TABLE_START/STOP, BAR_SALE, PRODUCT, EXPENSE, SYSTEM — summa bilan.
+- Barcha harakatlar `logs` jadvalida: TABLE_START/STOP, BAR_SALE, PRODUCT, EXPENSE, NOTE, SYSTEM — summa bilan.
 
 ### ⚙️ Sozlamalar
 - Klub nomi, standart soatlik narx. Birinchi ishga tushishda 6 ta stol + 4 demo mahsulot avtomatik yaratiladi.
@@ -80,13 +87,13 @@ BILLIARD_DB=/home/user/baza.db ./gradlew :desktopApp:run
 
 Tanlangan yo'l `~/.billiardapp/db_path.txt` da saqlanadi. Fayl topilmasa yoki o'qilmasa,
 dastur xavfsiz tarzda standart joyga qaytadi. Tanlashdan oldin fayl tekshiriladi:
-SQLite sarlavhasi, `PRAGMA user_version` (1..4) va `tables` jadvali mavjudligi.
+SQLite sarlavhasi, `PRAGMA user_version` (1..5) va `tables` jadvali mavjudligi.
 
 ## Loyiha strukturasi
 
 ```
-shared/src/commonMain/.../data/entity/Entities.kt   — 11 ta Room entity
-shared/src/commonMain/.../data/dao/Daos.kt          — 10 ta DAO (Flow + suspend)
+shared/src/commonMain/.../data/entity/Entities.kt   — 12 ta Room entity
+shared/src/commonMain/.../data/dao/Daos.kt          — 11 ta DAO (Flow + suspend)
 shared/src/commonMain/.../data/BilliardDatabase.kt  — RoomDatabase
 shared/src/commonMain/.../data/DatabaseBuilder.kt   — expect + BundledSQLiteDriver (TRUNCATE)
 shared/src/jvmMain/.../data/DatabaseBuilder.jvm.kt  — DatabaseLocation.activePath() (actual)

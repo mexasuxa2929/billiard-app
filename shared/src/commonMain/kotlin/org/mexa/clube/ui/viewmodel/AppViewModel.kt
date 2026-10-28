@@ -19,6 +19,7 @@ import org.mexa.clube.data.entity.Category
 import org.mexa.clube.data.entity.CheckReceipt
 import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.MovementLog
+import org.mexa.clube.data.entity.Note
 import org.mexa.clube.data.entity.Product
 import org.mexa.clube.data.entity.TableSession
 import org.mexa.clube.data.repository.BilliardRepository
@@ -65,6 +66,8 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
     val bookings: StateFlow<List<Booking>> = repo.bookings
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val expenses: StateFlow<List<Expense>> = repo.expenses
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val notes: StateFlow<List<Note>> = repo.notes
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // StolId -> oxirgi yopilgan sessiya (bo'sh karta uchun)
@@ -399,6 +402,21 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
         try {
             repo.deleteExpense(id)
             loadReport(0)
+            onDone()
+        } catch (e: Exception) { _error.value = e.message }
+    }
+
+    /** Zametkani saqlash (id = 0 bo'lsa yangi). */
+    fun saveNote(note: Note, onDone: () -> Unit = {}) = viewModelScope.launch {
+        try {
+            repo.saveNote(note)
+            onDone()
+        } catch (e: Exception) { _error.value = e.message }
+    }
+
+    fun deleteNote(id: Long, onDone: () -> Unit = {}) = viewModelScope.launch {
+        try {
+            repo.deleteNote(id)
             onDone()
         } catch (e: Exception) { _error.value = e.message }
     }

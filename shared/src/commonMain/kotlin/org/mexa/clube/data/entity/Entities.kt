@@ -109,7 +109,7 @@ data class CheckReceipt(
 data class MovementLog(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val timestamp: Long,
-    val type: String, // TABLE_START, TABLE_STOP, BAR_SALE, PRODUCT, EXPENSE, SYSTEM
+    val type: String, // TABLE_START, TABLE_STOP, BAR_SALE, PRODUCT, EXPENSE, NOTE, SYSTEM
     val description: String,
     val amount: Double = 0.0
 )
@@ -127,6 +127,20 @@ data class Expense(
 )
 
 val EXPENSE_CATEGORIES = listOf("Oylik", "Ijara", "Kommunal", "Ta'mirlash", "Mahsulot", "Transport", "Boshqa")
+
+@Entity(tableName = "notes")
+data class Note(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** Zametka sanasi — qaysi kunga tegishli (kun boshiga keltirilgan). */
+    val noteDate: Long,
+    /** Sababi / eslatma matni — majburiy. */
+    val reason: String,
+    /** Qancha pul (so'm). 0 bo'lsa — pulsiz eslatma. */
+    val amount: Double = 0.0,
+    /** Qo'shimcha izoh (ixtiyoriy). */
+    val note: String = "",
+    val createdAt: Long = 0L
+)
 
 @Entity(tableName = "settings")
 data class AppSetting(
