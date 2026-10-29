@@ -29,11 +29,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      # Windows'da SQLite jurnal faylini o'chirishda "disk I/O error" (2570)
-      # vaqti-vaqti bilan uchraydi (antivirus/himoya bilan bog'liq). Shuning uchun
-      # testlar yig'ishni to'xtatmaydi, lekin hisobot saqlanadi.
+      # Testlar yig'ishni to'xtatadi: baza WAL rejimiga o'tkazildi va Windows'da
+      # yozish ishlaydi, shuning uchun regressiya bo'lsa darhol bilinadi.
       - name: Testlar
-        continue-on-error: true
         shell: bash
         run: ./gradlew :shared:jvmTest --console=plain
 

@@ -15,9 +15,23 @@ import java.awt.Dimension
 fun main() = application {
     val state = rememberWindowState(width = 1280.dp, height = 800.dp)
 
+    // Baza butun dastur uchun bitta.
+    val db = remember {
+        val builder = getDatabaseBuilder()
+        getRoomDatabase(builder)
+    }
+    val repo = remember(db) { BilliardRepository(db) }
+    val vm = remember(repo) { AppViewModel(repo) }
+
     Window(
-        onCloseRequest = ::exitApplication,
-        title = "Billiard Club Manager v2.4 Pro",
+        onCloseRequest = {
+            // WAL rejimida oxirgi yozuvlar `-wal` faylida bo'ladi. Yopishdan oldin
+            // bazani checkpoint qilib yopamiz — shunda hamma ma'lumot `.db` faylga
+            // tushadi va yon fayllar o'chiriladi (baza yagona fayl bo'lib qoladi).
+            runCatching { db.close() }
+            exitApplication()
+        },
+        title = "Billiard Club Manager v2.5 Pro",
         state = state
     ) {
         // UI shu o'lchamdan kichik bo'lsa ham buzilmaydi, lekin
@@ -25,12 +39,6 @@ fun main() = application {
         LaunchedEffect(Unit) {
             window.minimumSize = Dimension(780, 560)
         }
-        val db = remember {
-            val builder = getDatabaseBuilder()
-            getRoomDatabase(builder)
-        }
-        val repo = remember(db) { BilliardRepository(db) }
-        val vm = remember(repo) { AppViewModel(repo) }
         App(vm)
     }
 }

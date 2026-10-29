@@ -41,11 +41,10 @@ class DatabasePortabilityTest {
     }
 
     /**
-     * Windows'da SQLite jurnal faylini tozalash paytida vaqti-vaqti bilan
-     * `SQLITE_IOERR_DELETE_NOENT` (2570, "disk I/O error") qaytadi — bu
-     * antivirus yoki fayl tizimining kechikishi bilan bog'liq vaqtinchalik xato.
-     * Shu sababli testni bir necha marta qayta urinamiz (Linux'da birinchi
-     * urinishda o'tadi).
+     * Windows'da SQLite fayl amallarida vaqti-vaqti bilan `SQLITE_IOERR_*`
+     * ("disk I/O error") qaytishi mumkin — antivirus yoki fayl tizimining
+     * kechikishi bilan bog'liq. Shu sababli testni bir necha marta qayta
+     * urinamiz (Linux'da odatda birinchi urinishda o'tadi).
      */
     private fun runWithDiskIoRetry(times: Int = 4, block: suspend () -> Unit) = runBlocking {
         repeat(times) { attempt ->
@@ -84,30 +83,25 @@ class DatabasePortabilityTest {
         db.close()
         openDbs.remove(db)
 
-        // TRUNCATE rejimi: WAL yon fayllari qolmasligi kerak
+        // Yopilgandan keyin checkpoint bo'lib, yon fayllar qolmasligi kerak:
+        // baza yagona ko'chiriladigan `.db` fayl bo'lib qoladi.
         assertTrue(!File("${dbFile.path}-wal").exists(), "-wal fayl qolmasligi kerak")
         assertTrue(!File("${dbFile.path}-shm").exists(), "-shm fayl qolmasligi kerak")
 
-        // --- Eski (WAL rejimida yaratilgan) bazani simulyatsiya qilamiz ---
-        BundledSQLiteDriver().open(dbFile.absolutePath).use { conn ->
-            conn.prepare("PRAGMA journal_mode = WAL").use { it.step() }
-        }
-        val walMode = BundledSQLiteDriver().open(dbFile.absolutePath).use { conn ->
-            conn.prepare("PRAGMA journal_mode").use { st -> if (st.step()) st.getText(0) else "" }
-        }
-        assertEquals("wal", walMode.lowercase(), "test uchun baza WAL rejimiga o'tishi kerak")
-
-        // Dastur bazani qayta ochadi -> TRUNCATE ga qaytishi va yon fayl qoldirmasligi kerak
+        // Qayta ochish: ma'lumot joyida bo'lishi va "avval o'qish, keyin yozish"
+        // ishlashi kerak (Windows'da aynan shu ketma-ketlik 2570 xatosini bergan edi).
         val reopened = getRoomDatabase(
             Room.databaseBuilder<BilliardDatabase>(name = dbFile.absolutePath)
         )
         openDbs += reopened
-        BilliardRepository(reopened).addTable("WAL dan keyin", 40_000.0)
+        val reopenedNames = reopened.tableDao().getAllTables().map { it.name }
+        assertTrue("Test stol" in reopenedNames, "qayta ochilganda ma'lumot saqlanishi kerak")
+        BilliardRepository(reopened).addTable("Qayta ochilgandan keyin", 40_000.0)
         reopened.close()
         openDbs.remove(reopened)
-        assertTrue(!File("${dbFile.path}-wal").exists(), "WAL bazasi TRUNCATE ga o'tishi kerak (-wal)")
-        assertTrue(!File("${dbFile.path}-shm").exists(), "WAL bazasi TRUNCATE ga o'tishi kerak (-shm)")
-        assertNull(DatabaseLocation.validate(dbFile.absolutePath), "WAL dan keyin baza yaroqli bo'lishi kerak")
+        assertTrue(!File("${dbFile.path}-wal").exists(), "yopilgandan keyin -wal qolmasligi kerak")
+        assertTrue(!File("${dbFile.path}-shm").exists(), "yopilgandan keyin -shm qolmasligi kerak")
+        assertNull(DatabaseLocation.validate(dbFile.absolutePath), "qayta ochilgandan keyin baza yaroqli bo'lishi kerak")
 
         val backupDir = File(dir, "backup")
         val backupPath = DatabaseLocation.backup(dbFile.absolutePath, backupDir.absolutePath)

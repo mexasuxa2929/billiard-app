@@ -65,8 +65,14 @@ Bilyard xonasini boshqarish uchun desktop app.
 
 ## Portable baza (`.db` ni ko'chirish)
 
-Butun baza — **bitta `.db` fayl**. WAL rejimi o'rniga `TRUNCATE` ishlatiladi, shuning uchun
-ishdan keyin `-wal` / `-shm` yon fayllari qolmaydi.
+Butun baza — **bitta `.db` fayl**. WAL (Write-Ahead Logging) rejimi ishlatiladi, lekin dastur
+yopilganda baza checkpoint qilinadi va `-wal` / `-shm` yon fayllari o'chiriladi — papkada
+faqat `.db` fayl qoladi. (WAL Windows, Linux va macOS'da bir xil ishlaydi; eski `TRUNCATE`
+rejimi Windows'da yozishda "disk I/O error" berardi.)
+
+> Muhim: dastur **ochiq turganda** `.db` faylni qo'lda nusxalamang — oxirgi yozuvlar hali
+> `-wal` faylida bo'lishi mumkin. Buning uchun **Sozlamalar → 💾 Nusxa saqlash** ishlatiladi
+> (u `VACUUM INTO` bilan bitta yaroqli `.db` yaratadi).
 
 **Boshqa kompyuterga / papkaga ko'chirish:**
 1. `.db` faylni nusxalang (masalan USB yoki tarmoq orqali).
@@ -95,7 +101,7 @@ SQLite sarlavhasi, `PRAGMA user_version` (1..5) va `tables` jadvali mavjudligi.
 shared/src/commonMain/.../data/entity/Entities.kt   — 12 ta Room entity
 shared/src/commonMain/.../data/dao/Daos.kt          — 11 ta DAO (Flow + suspend)
 shared/src/commonMain/.../data/BilliardDatabase.kt  — RoomDatabase
-shared/src/commonMain/.../data/DatabaseBuilder.kt   — expect + BundledSQLiteDriver (TRUNCATE)
+shared/src/commonMain/.../data/DatabaseBuilder.kt   — expect + BundledSQLiteDriver (WAL)
 shared/src/jvmMain/.../data/DatabaseBuilder.jvm.kt  — DatabaseLocation.activePath() (actual)
 shared/src/commonMain/.../data/DatabaseLocation.kt  — portable `.db` yo'li (expect)
 shared/src/jvmMain/.../data/DatabaseLocation.jvm.kt — yo'l, tekshirish, VACUUM INTO nusxa
