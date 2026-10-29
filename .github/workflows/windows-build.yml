@@ -26,6 +26,21 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Testlar
+        continue-on-error: true
+        shell: bash
+        run: ./gradlew :shared:jvmTest --console=plain
+
+      - name: Test hisoboti
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          if-no-files-found: warn
+          path: |
+            shared/build/reports/tests/jvmTest
+            shared/build/test-results/jvmTest
+
       - name: Build MSI installer
         id: msi
         continue-on-error: true
