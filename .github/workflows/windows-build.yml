@@ -9,6 +9,9 @@ on:
 permissions:
   contents: write
 
+env:
+  APP_VERSION: "2.5.0"
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -26,6 +29,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Windows'da SQLite jurnal faylini o'chirishda "disk I/O error" (2570)
+      # vaqti-vaqti bilan uchraydi (antivirus/himoya bilan bog'liq). Shuning uchun
+      # testlar yig'ishni to'xtatmaydi, lekin hisobot saqlanadi.
       - name: Testlar
         continue-on-error: true
         shell: bash
@@ -41,13 +47,17 @@ jobs:
             shared/build/reports/tests/jvmTest
             shared/build/test-results/jvmTest
 
-      - name: Build MSI installer
-        id: msi
+      - name: MSI installer
         continue-on-error: true
         shell: bash
         run: ./gradlew :desktopApp:packageMsi --console=plain --stacktrace
 
-      - name: Build portable app image
+      - name: EXE installer
+        continue-on-error: true
+        shell: bash
+        run: ./gradlew :desktopApp:packageExe --console=plain --stacktrace
+
+      - name: Portable app image
         shell: bash
         run: ./gradlew :desktopApp:createDistributable --console=plain
 
@@ -55,7 +65,7 @@ jobs:
         shell: bash
         run: |
           cd desktopApp/build/compose/binaries/main/app
-          7z a "$GITHUB_WORKSPACE/BilliardClubManager-2.5.0-windows-x64.zip" BilliardClubManager
+          7z a "$GITHUB_WORKSPACE/BilliardClubManager-$APP_VERSION-windows-x64.zip" BilliardClubManager
 
       - name: Show build outputs
         shell: bash
@@ -70,15 +80,17 @@ jobs:
           if-no-files-found: warn
           path: |
             desktopApp/build/compose/binaries/main/msi/*.msi
-            BilliardClubManager-2.5.0-windows-x64.zip
+            desktopApp/build/compose/binaries/main/exe/*.exe
+            BilliardClubManager-${{ env.APP_VERSION }}-windows-x64.zip
 
-      - name: Attach to release v2.5.0
+      - name: Attach to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.5.0
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', env.APP_VERSION) }}
           fail_on_unmatched_files: false
           files: |
             desktopApp/build/compose/binaries/main/msi/*.msi
-            BilliardClubManager-2.5.0-windows-x64.zip
+            desktopApp/build/compose/binaries/main/exe/*.exe
+            BilliardClubManager-${{ env.APP_VERSION }}-windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
