@@ -1,7 +1,9 @@
 package org.mexa.clube
 
 import androidx.room.Room
+import androidx.sqlite.SQLiteException
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.mexa.clube.data.BilliardDatabase
 import org.mexa.clube.data.DatabaseLocation
@@ -38,8 +40,29 @@ class DatabasePortabilityTest {
         tmpDirs.clear()
     }
 
+    /**
+     * Windows'da SQLite jurnal faylini tozalash paytida vaqti-vaqti bilan
+     * `SQLITE_IOERR_DELETE_NOENT` (2570, "disk I/O error") qaytadi — bu
+     * antivirus yoki fayl tizimining kechikishi bilan bog'liq vaqtinchalik xato.
+     * Shu sababli testni bir necha marta qayta urinamiz (Linux'da birinchi
+     * urinishda o'tadi).
+     */
+    private fun runWithDiskIoRetry(times: Int = 4, block: suspend () -> Unit) = runBlocking {
+        repeat(times) { attempt ->
+            try {
+                block()
+                return@runBlocking
+            } catch (e: SQLiteException) {
+                val message = e.message.orEmpty()
+                val transient = "disk I/O error" in message || "2570" in message
+                if (!transient || attempt == times - 1) throw e
+                delay(300L * (attempt + 1))
+            }
+        }
+    }
+
     @Test
-    fun backupCreatesSinglePortableFile() = runBlocking {
+    fun backupCreatesSinglePortableFile() = runWithDiskIoRetry {
         val dir = tmpDir("billiard-portable")
         val dbFile = File(dir, "billiard_club.db")
         val db = getRoomDatabase(
@@ -106,7 +129,7 @@ class DatabasePortabilityTest {
     }
 
     @Test
-    fun copiedFileWorksInAnotherFolder() = runBlocking {
+    fun copiedFileWorksInAnotherFolder() = runWithDiskIoRetry {
         val sourceDir = tmpDir("billiard-source")
         val source = File(sourceDir, "billiard_club.db")
         val db = getRoomDatabase(
