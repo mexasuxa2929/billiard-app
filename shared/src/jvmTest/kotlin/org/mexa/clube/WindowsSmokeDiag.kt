@@ -1,54 +1,61 @@
 package org.mexa.clube
 
 import androidx.room.Room
+import androidx.room.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.runBlocking
 import org.mexa.clube.data.BilliardDatabase
-import org.mexa.clube.data.getRoomDatabase
 import org.mexa.clube.data.repository.BilliardRepository
 import java.io.File
 import kotlin.test.Test
 
 /**
- * VAQTINCHALIK diagnostika: Windows'da haqiqiy baza yo'lida
- * "avval o'qish, keyin yozish" ishlashini tekshiradi.
+ * VAQTINCHALIK diagnostika: Windows'da qaysi journal rejimi "avval o'qish,
+ * keyin yozish" da ishlashini aniqlaydi.
  */
 class WindowsSmokeDiag {
 
-    private fun journalMode(path: String): String = runCatching {
-        BundledSQLiteDriver().open(path).use { conn ->
-            conn.prepare("PRAGMA journal_mode").use { st ->
-                if (st.step()) st.getText(0) else "?"
-            }
-        }
-    }.getOrElse { "xato: ${it.message}" }
+    private fun build(path: String, mode: RoomDatabase.JournalMode): BilliardDatabase =
+        Room.databaseBuilder<BilliardDatabase>(name = path)
+            .setDriver(BundledSQLiteDriver())
+            .setJournalMode(mode)
+            .setQueryCoroutineContext(Dispatchers.IO)
+            .build()
 
-    @Test
-    fun readThenWriteOnRealPath() = runBlocking {
-        val dir = File(System.getProperty("user.home"), ".billiardapp-diag")
-        dir.deleteRecursively()
+    private fun attempt(label: String, mode: RoomDatabase.JournalMode, reads: Int = 1) = runBlocking {
+        val dir = File(System.getProperty("user.home"), ".billiardapp-diag-${System.nanoTime()}")
         dir.mkdirs()
         val path = File(dir, "diag.db").absolutePath
-
-        println("DIAG os=${System.getProperty("os.name")} path=$path")
-        println("DIAG java.io.tmpdir=${System.getProperty("java.io.tmpdir")}")
-
         var db: BilliardDatabase? = null
+        val t0 = System.currentTimeMillis()
+        var ok = true
         try {
-            db = getRoomDatabase(Room.databaseBuilder<BilliardDatabase>(name = path))
-            println("DIAG journal(initial)=${journalMode(path)}")
-            val read = db.tableDao().getAllTables()
-            println("DIAG read=${read.size}")
-            BilliardRepository(db).addTable("Diag stol", 1000.0)
-            println("DIAG write=ok")
-            println("DIAG journal(after_write)=${journalMode(path)}")
+            db = build(path, mode)
+            repeat(reads) { db.tableDao().getAllTables() }
+            BilliardRepository(db).addTable("Stol", 1000.0)
+            repeat(reads) { db.tableDao().getAllTables() }
+            BilliardRepository(db).addTable("Stol 2", 2000.0)
+            println("DIAG $label -> OK (${System.currentTimeMillis() - t0} ms)")
         } catch (e: Throwable) {
-            println("DIAG xato: ${e::class.simpleName}: ${e.message}")
-            e.stackTrace.take(6).forEach { println("DIAG   at $it") }
+            ok = false
+            println("DIAG $label -> XATO ${e::class.simpleName}: ${e.message} (${System.currentTimeMillis() - t0} ms)")
         } finally {
             runCatching { db?.close() }
-            println("DIAG files=${dir.list()?.joinToString(",") ?: "-"}")
+            val left = dir.list()?.joinToString(",") ?: "-"
+            println("DIAG $label ok=$ok yopilgandan keyingi fayllar=[$left]")
             runCatching { dir.deleteRecursively() }
         }
+    }
+
+    @Test
+    fun journalModes() {
+        println("DIAG os=${System.getProperty("os.name")}")
+        attempt("TRUNCATE/read+write", RoomDatabase.JournalMode.TRUNCATE)
+        attempt("WAL/read+write", RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+        attempt("TRUNCATE/write-only", RoomDatabase.JournalMode.TRUNCATE, reads = 0)
+        attempt("TRUNCATE/read3+write", RoomDatabase.JournalMode.TRUNCATE, reads = 3)
+        attempt("WAL/read3+write", RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING, reads = 3)
     }
 }
