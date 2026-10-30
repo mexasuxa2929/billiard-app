@@ -7,6 +7,7 @@ import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import org.mexa.clube.data.entity.BarSaleItem
 import org.mexa.clube.data.entity.CheckReceipt
+import org.mexa.clube.data.entity.SessionPart
 import org.mexa.clube.data.entity.TableSession
 import kotlin.math.ceil
 import kotlin.time.ExperimentalTime
@@ -15,9 +16,14 @@ import kotlin.time.Instant
 object Billing {
     /** Daqiqabay hisob: soniyalarni yuqoriga yaxlitlaydi, min 1 daqiqa */
     fun calculateTableCost(startMillis: Long, endMillis: Long, hourlyPrice: Double): Double {
-        val diff = (endMillis - startMillis).coerceAtLeast(0)
-        val minutes = ceil(diff / 60_000.0).coerceAtLeast(1.0)
+        val minutes = durationMinutes(startMillis, endMillis)
         return hourlyPrice * minutes / 60.0
+    }
+
+    /** Davomiylikni daqiqada (yuqoriga yaxlitlangan, kamida 1 daqiqa). */
+    fun durationMinutes(startMillis: Long, endMillis: Long): Long {
+        val diff = (endMillis - startMillis).coerceAtLeast(0)
+        return ceil(diff / 60_000.0).toLong().coerceAtLeast(1L)
     }
 
     fun durationText(startMillis: Long, endMillis: Long): String {
@@ -31,6 +37,21 @@ object Billing {
     private fun pad(v: Long): String = if (v < 10) "0$v" else "$v"
 
     fun roundToHundred(value: Double): Double = ceil(value / 100.0) * 100.0
+
+    /**
+     * Joriy (ochiq) partiya boshlanishi: oxirgi yopilgan partiya tugagan vaqt,
+     * partiya bo'lmasa — sessiya boshlangan vaqt.
+     */
+    fun currentPartStart(sessionStart: Long, closedParts: List<SessionPart>): Long =
+        closedParts.lastOrNull()?.endTime ?: sessionStart
+
+    /** Stol hisobi: yopilgan partiyalar + hozir davom etayotgan partiya. */
+    fun tableTotal(
+        closedParts: List<SessionPart>,
+        currentStart: Long,
+        nowMillis: Long,
+        hourlyRate: Double
+    ): Double = closedParts.sumOf { it.amount } + calculateTableCost(currentStart, nowMillis, hourlyRate)
 }
 
 fun formatMoney(value: Double): String {

@@ -13,6 +13,10 @@ Bilyard xonasini boshqarish uchun desktop app.
 - Stollar soni cheksiz: qo'shish / tahrirlash / o'chirish, har bir stolga alohida soatlik narx.
 - `Boshlash` → jonli taymer (1 soniyada yangilanadi) + hozirgi summa.
 - Hisoblash: **daqiqabay, ceil** — `cost = hourlyPrice * ceil(sec/60) / 60`, min 1 daqiqa.
+- **⏱ Taymerni yangilash (partiya)** → mijoz "taymerni yangila" desa:
+  joriy partiya summasi hisoblanib yoziladi, taymer noldan boshlanadi.
+  Har bir partiyaning vaqti/davomiyligi/summasi `📋 Ko'rish` oynasida ko'rinadi.
+  Sessiya yakunida **stol hisobi = barcha partiyalar yig'indisi** (chekda ham partiyalar ro'yxati chiqadi).
 - `+ Bar` → ochiq sessiyaga mahsulot yozish (stok avtomatik kamayadi, yetmasa xato).
 - `🍺 Zakazlar (N)` → stolga yozilgan barcha bar zakazlarini ko'rish, o'chirish yoki yana qo'shish.
 - `Yopish` → chegirma + to'lov turi (Naqd/Karta/Click) → **chek** generatsiya.
@@ -53,7 +57,8 @@ Bilyard xonasini boshqarish uchun desktop app.
 - Hisobotda "stolga" va "alohida" savdo yorliqlari ko'rsatiladi, Excelda ham shu taqsimot bor.
 
 ### 🧾 Chek
-- Chiroyli matnli chek: klub nomi, stol, davomiylik, tarif, bar pozitsiyalari, chegirma, JAMI.
+- Chiroyli matnli chek: klub nomi, stol, davomiylik, tarif, **partiyalar ro'yxati va ularning jami**,
+  bar pozitsiyalari, chegirma, JAMI.
 - **Chop etish** (PrinterJob dialog) + **faylga saqlash** (.txt).
 
 ### 🧾 Tarix / Jurnal
@@ -98,8 +103,8 @@ SQLite sarlavhasi, `PRAGMA user_version` (1..5) va `tables` jadvali mavjudligi.
 ## Loyiha strukturasi
 
 ```
-shared/src/commonMain/.../data/entity/Entities.kt   — 12 ta Room entity
-shared/src/commonMain/.../data/dao/Daos.kt          — 11 ta DAO (Flow + suspend)
+shared/src/commonMain/.../data/entity/Entities.kt   — 13 ta Room entity
+shared/src/commonMain/.../data/dao/Daos.kt          — 12 ta DAO (Flow + suspend)
 shared/src/commonMain/.../data/BilliardDatabase.kt  — RoomDatabase
 shared/src/commonMain/.../data/DatabaseBuilder.kt   — expect + BundledSQLiteDriver (WAL)
 shared/src/jvmMain/.../data/DatabaseBuilder.jvm.kt  — DatabaseLocation.activePath() (actual)

@@ -17,6 +17,7 @@ import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.MovementLog
 import org.mexa.clube.data.entity.Note
 import org.mexa.clube.data.entity.Product
+import org.mexa.clube.data.entity.SessionPart
 import org.mexa.clube.data.entity.TableSession
 
 @Dao
@@ -65,6 +66,24 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE tableId = :tableId AND status = 'CLOSED' ORDER BY endTime DESC LIMIT 1")
     suspend fun getLastClosedByTable(tableId: Long): TableSession?
+}
+
+@Dao
+interface SessionPartDao {
+    @Query("SELECT * FROM session_parts WHERE sessionId = :sessionId ORDER BY partNo")
+    suspend fun getBySession(sessionId: Long): List<SessionPart>
+
+    @Query("SELECT * FROM session_parts WHERE sessionId = :sessionId ORDER BY partNo")
+    fun observeBySession(sessionId: Long): Flow<List<SessionPart>>
+
+    @Insert
+    suspend fun insert(part: SessionPart): Long
+
+    @Query("DELETE FROM session_parts WHERE sessionId = :sessionId")
+    suspend fun deleteBySession(sessionId: Long)
+
+    @Query("SELECT COUNT(*) FROM session_parts WHERE sessionId = :sessionId")
+    suspend fun countBySession(sessionId: Long): Int
 }
 
 @Dao

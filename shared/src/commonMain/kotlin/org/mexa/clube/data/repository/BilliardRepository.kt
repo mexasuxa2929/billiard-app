@@ -14,6 +14,7 @@ import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.MovementLog
 import org.mexa.clube.data.entity.Note
 import org.mexa.clube.data.entity.Product
+import org.mexa.clube.data.entity.SessionPart
 import org.mexa.clube.data.entity.TableSession
 import org.mexa.clube.domain.Billing
 import org.mexa.clube.domain.ReportSummary
@@ -147,9 +148,43 @@ class BilliardRepository(
     suspend fun previewClose(tableId: Long, atMillis: Long = currentMillis()): Triple<TableSession, Double, List<BarSaleItem>> {
         val session = db.sessionDao().getOpenByTable(tableId)
             ?: throw IllegalStateException("Ochiq sessiya topilmadi")
-        val cost = Billing.calculateTableCost(session.startTime, atMillis, session.hourlyRate)
+        val parts = db.sessionPartDao().getBySession(session.id)
+        val partStart = Billing.currentPartStart(session.startTime, parts)
+        val cost = Billing.tableTotal(parts, partStart, atMillis, session.hourlyRate)
         val items = barItemsForSession(session.id)
         return Triple(session, cost, items)
+    }
+
+    // ---------- Partiyalar (taymerni yangilash) ----------
+
+    suspend fun partsForSession(sessionId: Long): List<SessionPart> = db.sessionPartDao().getBySession(sessionId)
+
+    /**
+     * "Taymerni yangilash": joriy partiyani yopadi (davomiyligi va summasi yoziladi)
+     * va taymerni shu paytdan noldan boshlaydi.
+     */
+    suspend fun startNewPart(tableId: Long, atMillis: Long = currentMillis()): SessionPart {
+        val session = db.sessionDao().getOpenByTable(tableId)
+            ?: throw IllegalStateException("Ochiq sessiya topilmadi")
+        val parts = db.sessionPartDao().getBySession(session.id)
+        val start = Billing.currentPartStart(session.startTime, parts)
+        if (atMillis - start < MIN_PART_MILLIS) {
+            throw IllegalStateException("Partiya juda qisqa — kamida 10 soniya o'tishi kerak")
+        }
+        val minutes = Billing.durationMinutes(start, atMillis)
+        val amount = Billing.calculateTableCost(start, atMillis, session.hourlyRate)
+        val part = SessionPart(
+            sessionId = session.id,
+            partNo = (parts.maxOfOrNull { it.partNo } ?: 0) + 1,
+            startTime = start,
+            endTime = atMillis,
+            hourlyRate = session.hourlyRate,
+            minutes = minutes,
+            amount = amount
+        )
+        val id = db.sessionPartDao().insert(part)
+        log("TABLE", "${session.tableName}: partiya #${part.partNo} — $minutes daq, ${amount.toLong()} so'm", amount)
+        return part.copy(id = id)
     }
 
     suspend fun barItemsForSession(sessionId: Long): List<BarSaleItem> {
@@ -167,7 +202,24 @@ class BilliardRepository(
         val session = db.sessionDao().getOpenByTable(tableId)
             ?: throw IllegalStateException("Ochiq sessiya topilmadi")
         val now = currentMillis()
-        val tableCost = Billing.calculateTableCost(session.startTime, now, session.hourlyRate)
+        val parts = db.sessionPartDao().getBySession(session.id)
+        // Oxirgi (davom etayotgan) partiyani ham yozib qo'yamiz — tarix to'liq bo'ladi.
+        val partStart = Billing.currentPartStart(session.startTime, parts)
+        val finalMinutes = Billing.durationMinutes(partStart, now)
+        val finalAmount = Billing.calculateTableCost(partStart, now, session.hourlyRate)
+        val finalPart = SessionPart(
+            sessionId = session.id,
+            partNo = (parts.maxOfOrNull { it.partNo } ?: 0) + 1,
+            startTime = partStart,
+            endTime = now,
+            hourlyRate = session.hourlyRate,
+            minutes = finalMinutes,
+            amount = finalAmount
+        )
+        db.sessionPartDao().insert(finalPart)
+        val partsTotal = parts.sumOf { it.amount } + finalAmount
+        val partCount = parts.size + 1
+        val tableCost = partsTotal
         val sales = db.barSaleDao().getBySession(session.id)
         var barSell = 0.0
         var barBuy = 0.0
@@ -189,7 +241,7 @@ class BilliardRepository(
         // Stolga yozilgan bar savdolari shu paytda to'langan hisoblanadi:
         // hisobotda ular stol yopilgan kunga kiradi va bir marta hisoblanadi.
         db.barSaleDao().closeForSession(session.id, now)
-        val details = "Stol:${tableCost.toLong()} Bar:${barSell.toLong()} Chegirma:${discount.toLong()}"
+        val details = "Stol:${tableCost.toLong()} Bar:${barSell.toLong()} Chegirma:${discount.toLong()} Partiya:$partCount"
         val check = CheckReceipt(
             sessionId = session.id,
             createdAt = now,
@@ -202,7 +254,11 @@ class BilliardRepository(
             details = details
         )
         val checkId = db.checkDao().insert(check)
-        log("TABLE_STOP", "${session.tableName} yakunlandi. Stol: ${tableCost.toLong()}, Bar: ${barSell.toLong()}, Jami: ${total.toLong()}", total)
+        log(
+            "TABLE_STOP",
+            "${session.tableName} yakunlandi. Stol: ${tableCost.toLong()} ($partCount partiya), Bar: ${barSell.toLong()}, Jami: ${total.toLong()}",
+            total
+        )
         return check.copy(id = checkId)
     }
 
@@ -215,6 +271,8 @@ class BilliardRepository(
             items.forEach { db.productDao().increaseStock(it.productId, it.qty) }
         }
         val now = currentMillis()
+        // Bekor qilingan sessiyaning partiyalari hisobotga tushmasligi uchun o'chiramiz.
+        db.sessionPartDao().deleteBySession(session.id)
         db.sessionDao().update(session.copy(status = "CANCELLED", endTime = now))
         // Stok qaytarilgan savdo hisobotda bar daromadi/foydasi bo'lib qolmasligi kerak.
         db.barSaleDao().cancelForSession(session.id, now)
@@ -498,3 +556,6 @@ class BilliardRepository(
         }
     }
 }
+
+/** Partiya minimal davomiyligi — tasodifiy ikki marta bosishdan himoya. */
+private const val MIN_PART_MILLIS = 10_000L

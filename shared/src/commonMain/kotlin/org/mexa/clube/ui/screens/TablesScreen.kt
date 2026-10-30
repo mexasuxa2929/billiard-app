@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -100,6 +101,7 @@ fun TablesScreen(vm: AppViewModel) {
     var showAdd by remember { mutableStateOf(false) }
     var editTable by remember { mutableStateOf<BilliardTable?>(null) }
     var closeUi by remember { mutableStateOf<TableUi?>(null) }
+    var partsUi by remember { mutableStateOf<TableUi?>(null) }
     var barUi by remember { mutableStateOf<TableUi?>(null) }
     var showCheck by remember { mutableStateOf(false) }
     var deleteTable by remember { mutableStateOf<BilliardTable?>(null) }
@@ -248,6 +250,8 @@ fun TablesScreen(vm: AppViewModel) {
                             onOrder = { barUi = ui },
                             onStop = { closeUi = ui },
                             onViewBar = { viewBarUi = ui },
+                            onNewPart = { vm.startNewPart(ui.table.id) },
+                            onViewParts = { partsUi = ui },
                             onEdit = { editTable = ui.table },
                             onDelete = { deleteTable = ui.table }
                         )
@@ -300,6 +304,10 @@ fun TablesScreen(vm: AppViewModel) {
         TableEditDialog(title = "Stolni tahrirlash", initial = t, priceDefault = t.hourlyPrice, onDismiss = { editTable = null }) { name, price, zone ->
             vm.updateTable(t.copy(name = name, hourlyPrice = price, zone = zone)); editTable = null
         }
+    }
+    partsUi?.let { snapshot ->
+        val live = tablesUi.firstOrNull { it.table.id == snapshot.table.id } ?: snapshot
+        PartsDialog(ui = live, onDismiss = { partsUi = null })
     }
     closeUi?.let { ui ->
         CloseSessionDialog(ui = ui, onDismiss = { closeUi = null }) { discount, payment ->
@@ -438,7 +446,17 @@ private fun CardHeader(name: String, zone: String, price: String, onEdit: () -> 
 }
 
 @Composable
-private fun BusyCard(ui: TableUi, onOrder: () -> Unit, onStop: () -> Unit, onViewBar: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun BusyCard(
+    ui: TableUi,
+    onOrder: () -> Unit,
+    onStop: () -> Unit,
+    onViewBar: () -> Unit,
+    onNewPart: () -> Unit,
+    onViewParts: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val now = currentMillis()
     ProCard(Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().border(1.dp, BusyBorder, RoundedCornerShape(14.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             CardHeader(ui.table.name, ui.table.zone.ifBlank { "Standart" }, "${formatMoney(ui.table.hourlyPrice)}/soat", onEdit, onDelete)
@@ -446,16 +464,60 @@ private fun BusyCard(ui: TableUi, onOrder: () -> Unit, onStop: () -> Unit, onVie
                 Modifier.fillMaxWidth().background(Color(0xFF2A1218), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 7.dp),
                 horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(8.dp).clip(CircleShape).background(Pro.Red))
-                    Text("O'yinda (Band)", color = Pro.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Column {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(Pro.Red))
+                        Text("O'yinda (Band)", color = Pro.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    // Joriy (ochiq) partiya taymeri
+                    Text(
+                        "Partiya #${ui.partCount + 1}: " + Billing.durationText(ui.partStart, now),
+                        color = Pro.TextFaint, fontSize = 10.sp, fontFamily = FontFamily.Monospace
+                    )
                 }
-                Text(
-                    Billing.durationText(ui.session!!.startTime, currentMillis()),
-                    color = Pro.Red, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 12.sp
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        Billing.durationText(ui.session!!.startTime, now),
+                        color = Pro.Red, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 12.sp
+                    )
+                    Text("jami vaqt", color = Pro.TextFaint, fontSize = 9.sp)
+                }
             }
             KV("Stol hisobi:", formatMoney(ui.currentSum))
+            if (ui.partCount > 0) {
+                Row(
+                    Modifier.fillMaxWidth().background(Pro.Surface, RoundedCornerShape(8.dp))
+                        .padding(start = 10.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Yopilgan partiyalar: ${ui.partCount} ta", color = Pro.TextFaint, fontSize = 11.sp)
+                        Text(
+                            formatMoney(ui.partsSum),
+                            color = Pro.TextMain, fontWeight = FontWeight.Bold, fontSize = 13.sp
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = onViewParts,
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Pro.CardBorder),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) { Text("📋 Ko'rish", color = Pro.TextDim, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                }
+            }
+            // "Taymerni yangilash" — mijoz keyingi partiyaga o'tsa bosiladi
+            OutlinedButton(
+                onClick = onNewPart,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Pro.Amber)
+            ) {
+                Text(
+                    "⏱  Taymerni yangilash (partiya #${ui.partCount + 1})",
+                    color = Pro.Amber, fontSize = 12.sp, fontWeight = FontWeight.Bold
+                )
+            }
             Row(
                 Modifier.fillMaxWidth()
                     .background(Pro.Surface, RoundedCornerShape(8.dp))
@@ -720,13 +782,26 @@ private fun CloseSessionDialog(ui: TableUi, onDismiss: () -> Unit, onConfirm: (D
     var discount by remember { mutableStateOf("0") }
     var payment by remember { mutableStateOf("Naqd") }
     val now = currentMillis()
-    val cost = ui.session?.let { Billing.calculateTableCost(it.startTime, now, it.hourlyRate) } ?: 0.0
+    val sess = ui.session
+    // Stol hisobi: yopilgan partiyalar + hozir davom etayotgan partiya
+    val runningPart = if (sess != null) Billing.calculateTableCost(ui.partStart, now, sess.hourlyRate) else 0.0
+    val cost = ui.partsSum + runningPart
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("${ui.table.name} — yakunlash") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Davomiylik: ${ui.session?.let { Billing.durationText(it.startTime, now) } ?: "-"}")
+                Text("Davomiylik: ${sess?.let { Billing.durationText(it.startTime, now) } ?: "-"}")
+                if (ui.partCount > 0) {
+                    Text(
+                        "Partiyalar: ${ui.partCount} ta — ${formatMoney(ui.partsSum)}",
+                        color = Pro.TextDim, fontSize = 12.sp
+                    )
+                    Text(
+                        "Joriy partiya #${ui.partCount + 1}: ${Billing.durationText(ui.partStart, now)} — ${formatMoney(runningPart)}",
+                        color = Pro.TextDim, fontSize = 12.sp
+                    )
+                }
                 Text("Stol summasi: ${formatMoney(cost)}")
                 if (ui.barCount > 0) Text("Bar: ${formatMoney(ui.barSum)} (${ui.barCount} pozitsiya)", color = Pro.Green)
                 OutlinedTextField(discount, { discount = it.filter { c -> c.isDigit() } }, label = { Text("Chegirma (so'm)") })
@@ -751,6 +826,97 @@ private fun CloseSessionDialog(ui: TableUi, onDismiss: () -> Unit, onConfirm: (D
         },
         confirmButton = { Button(onClick = { onConfirm(discount.toDoubleOrNull() ?: 0.0, payment) }) { Text("Yopish + Chek") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Bekor") } }
+    )
+}
+
+/**
+ * Sessiya partiyalari: har bir partiyaning vaqti, davomiyligi va summasi
+ * hamda barcha partiyalarning umumiy summasi.
+ */
+@Composable
+private fun PartsDialog(ui: TableUi, onDismiss: () -> Unit) {
+    val now = currentMillis()
+    val rate = ui.session?.hourlyRate ?: 0.0
+    val runningAmount = Billing.calculateTableCost(ui.partStart, now, rate)
+    val runningMinutes = Billing.durationMinutes(ui.partStart, now)
+    val total = ui.partsSum + runningAmount
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("⏱ Partiyalar — ${ui.table.name}") },
+        text = {
+            Column(Modifier.fillMaxWidth().heightIn(max = 430.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (ui.session == null) {
+                    Text("Sessiya topilmadi", color = Pro.TextFaint)
+                } else {
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        Modifier.fillMaxWidth().weight(1f, fill = false),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(ui.parts.size) { idx ->
+                            val p = ui.parts[idx]
+                            Row(
+                                Modifier.fillMaxWidth().background(Pro.Surface, RoundedCornerShape(8.dp)).padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    Modifier.size(26.dp).clip(CircleShape)
+                                        .background(Pro.GreenBg)
+                                        .border(1.dp, Pro.GreenBorder, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) { Text("${p.partNo}", color = Pro.Green, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                                Spacer(Modifier.width(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        "${formatHourMinute(p.startTime)} – ${formatHourMinute(p.endTime)}",
+                                        color = Pro.TextMain, fontSize = 12.sp, fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        "${p.minutes} daq · ${formatMoney(p.hourlyRate)}/soat",
+                                        color = Pro.TextFaint, fontSize = 11.sp
+                                    )
+                                }
+                                Text(formatMoney(p.amount), color = Pro.Green, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                            }
+                        }
+                        // Hozir davom etayotgan partiya
+                        item {
+                            Row(
+                                Modifier.fillMaxWidth().background(Pro.AmberBg, RoundedCornerShape(8.dp))
+                                    .border(1.dp, Pro.Amber, RoundedCornerShape(8.dp)).padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    Modifier.size(26.dp).clip(CircleShape)
+                                        .background(Color(0xFF3A2A0A))
+                                        .border(1.dp, Pro.Amber, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) { Text("${ui.partCount + 1}", color = Pro.Amber, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                                Spacer(Modifier.width(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        "${formatHourMinute(ui.partStart)} – hozir",
+                                        color = Pro.Amber, fontSize = 12.sp, fontWeight = FontWeight.Bold
+                                    )
+                                    Text("$runningMinutes daq · davom etmoqda", color = Pro.TextFaint, fontSize = 11.sp)
+                                }
+                                Text(formatMoney(runningAmount), color = Pro.Amber, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                            }
+                        }
+                    }
+                    HorizontalDivider(color = Pro.CardBorder)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Partiyalar: ${ui.partCount + 1} ta", color = Pro.TextDim, fontSize = 12.sp)
+                        Text("Jami: ${formatMoney(total)}", color = Pro.Green, fontWeight = FontWeight.Black, fontSize = 15.sp)
+                    }
+                    Text(
+                        "Stol hisobi shu partiyalar yig'indisidan chiqadi.",
+                        color = Pro.TextFaint, fontSize = 11.sp
+                    )
+                }
+            }
+        },
+        confirmButton = { Button(onClick = onDismiss) { Text("Yopish") } },
+        dismissButton = {}
     )
 }
 

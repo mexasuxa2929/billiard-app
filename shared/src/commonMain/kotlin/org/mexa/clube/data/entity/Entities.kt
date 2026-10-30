@@ -55,6 +55,32 @@ data class TableSession(
     val note: String = ""
 )
 
+/**
+ * Sessiya ichidagi bitta "partiya" (taymer yangilanganda yopiladigan bo'lak).
+ *
+ * Mijoz "taymerni yangila" desa, joriy partiya shu paytda yopiladi: uning
+ * davomiyligi va summasi yozib qo'yiladi, taymer esa noldan boshlanadi.
+ * Sessiya yakunlanganda stol hisobi = barcha partiyalar summasi + oxirgi partiya.
+ */
+@Entity(
+    tableName = "session_parts",
+    indices = [Index(value = ["sessionId"])]
+)
+data class SessionPart(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val sessionId: Long,
+    /** Sessiya ichidagi tartib raqami: 1, 2, 3 ... */
+    val partNo: Int,
+    val startTime: Long,
+    val endTime: Long,
+    /** Shu partiya uchun soatlik tarif. */
+    val hourlyRate: Double = 0.0,
+    /** Hisoblangan daqiqa (yuqoriga yaxlitlangan, kamida 1 daqiqa). */
+    val minutes: Long = 1,
+    /** Partiya summasi (so'm). */
+    val amount: Double = 0.0
+)
+
 @Entity(tableName = "products")
 data class Product(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

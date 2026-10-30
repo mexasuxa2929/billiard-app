@@ -21,6 +21,7 @@ import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.MovementLog
 import org.mexa.clube.data.entity.Note
 import org.mexa.clube.data.entity.Product
+import org.mexa.clube.data.entity.SessionPart
 import org.mexa.clube.data.entity.TableSession
 import org.mexa.clube.data.repository.BilliardRepository
 import org.mexa.clube.domain.Billing
@@ -28,6 +29,7 @@ import org.mexa.clube.domain.ReportSummary
 import org.mexa.clube.domain.buildCheckText
 import org.mexa.clube.domain.currentMillis
 import org.mexa.clube.domain.formatFileStamp
+import org.mexa.clube.domain.formatHourMinute
 import org.mexa.clube.domain.formatMoney
 import org.mexa.clube.domain.startOfDay
 import org.mexa.clube.domain.startOfMonth
@@ -37,11 +39,22 @@ data class TableUi(
     val table: BilliardTable,
     val session: TableSession?,
     val elapsedSec: Long = 0,
+    /** Stol hisobi: yopilgan partiyalar + hozir davom etayotgan partiya. */
     val currentSum: Double = 0.0,
     val barSum: Double = 0.0,
     val barCount: Int = 0,
     val booking: Booking? = null,
-    val lastSession: TableSession? = null
+    val lastSession: TableSession? = null,
+    /** Yopilgan partiyalar summasi. */
+    val partsSum: Double = 0.0,
+    /** Yopilgan partiyalar soni. */
+    val partCount: Int = 0,
+    /** Joriy (ochiq) partiya boshlangan vaqt. */
+    val partStart: Long = 0L,
+    /** Joriy partiya summasi (hozircha). */
+    val partSum: Double = 0.0,
+    /** Yopilgan partiyalar ro'yxati. */
+    val parts: List<SessionPart> = emptyList()
 )
 
 class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
@@ -62,6 +75,10 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
     // SessiyaId -> shu sessiyaga yozilgan bar itemlar (stol kartasi + ko'rish dialogi uchun)
     private val _sessionBars = MutableStateFlow<Map<Long, List<BarSaleItem>>>(emptyMap())
     val sessionBars: StateFlow<Map<Long, List<BarSaleItem>>> = _sessionBars.asStateFlow()
+
+    // SessiyaId -> yopilgan partiyalar (taymerni yangilash tarixi)
+    private val _sessionParts = MutableStateFlow<Map<Long, List<SessionPart>>>(emptyMap())
+    val sessionParts: StateFlow<Map<Long, List<SessionPart>>> = _sessionParts.asStateFlow()
 
     val bookings: StateFlow<List<Booking>> = repo.bookings
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -181,26 +198,40 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
         }
         // Har soniyada timer yangilash + tables/openSessions o'zgarishini kuzatish
         viewModelScope.launch {
-            kotlinx.coroutines.flow.combine(tables, openSessions, _tick, _sessionBars, bookings, _lastClosed) { args ->
+            kotlinx.coroutines.flow.combine(
+                tables, openSessions, _tick, _sessionBars, bookings, _lastClosed, _sessionParts
+            ) { args ->
                 @Suppress("UNCHECKED_CAST")
                 val ts = args[0] as List<BilliardTable>
                 val ss = args[1] as List<TableSession>
                 val bars = args[3] as Map<Long, List<BarSaleItem>>
                 val bs = args[4] as List<Booking>
                 val last = args[5] as Map<Long, TableSession>
+                val partsMap = args[6] as Map<Long, List<SessionPart>>
                 val now = currentMillis()
                 ts.map { t ->
                     val s = ss.firstOrNull { it.tableId == t.id }
                     if (s == null) TableUi(t, null, booking = bs.firstOrNull { it.tableId == t.id }, lastSession = last[t.id])
                     else {
-                        val sum = Billing.calculateTableCost(s.startTime, now, s.hourlyRate)
+                        val parts = partsMap[s.id].orEmpty()
+                        val partStart = Billing.currentPartStart(s.startTime, parts)
+                        val partsSum = parts.sumOf { it.amount }
+                        val partSum = Billing.calculateTableCost(partStart, now, s.hourlyRate)
                         val items = bars[s.id].orEmpty()
                         TableUi(
-                            t, s, (now - s.startTime) / 1000, sum,
+                            table = t,
+                            session = s,
+                            elapsedSec = (now - s.startTime) / 1000,
+                            currentSum = partsSum + partSum,
                             barSum = items.sumOf { it.sellPrice * it.qty },
                             barCount = items.size,
                             booking = null,
-                            lastSession = last[t.id]
+                            lastSession = last[t.id],
+                            partsSum = partsSum,
+                            partCount = parts.size,
+                            partStart = partStart,
+                            partSum = partSum,
+                            parts = parts
                         )
                     }
                 }
@@ -228,9 +259,11 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
             val ss = openSessions.value
             if (ss.isEmpty()) {
                 if (_sessionBars.value.isNotEmpty()) _sessionBars.value = emptyMap()
+                if (_sessionParts.value.isNotEmpty()) _sessionParts.value = emptyMap()
                 return@launch
             }
             _sessionBars.value = ss.associate { it.id to repo.barItemsForSession(it.id) }
+            _sessionParts.value = ss.associate { it.id to repo.partsForSession(it.id) }
         } catch (_: Exception) {}
     }
 
@@ -267,6 +300,18 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
         try { repo.startSession(t); refreshTablesUi(); refreshSessionBars() } catch (e: Exception) { _error.value = e.message }
     }
 
+    /**
+     * "Taymerni yangilash": mijoz keyingi partiyaga o'tsa, joriy partiya summasi
+     * hisoblanib yoziladi va taymer noldan boshlanadi.
+     */
+    fun startNewPart(tableId: Long) = viewModelScope.launch {
+        try {
+            repo.startNewPart(tableId)
+            refreshTablesUi()
+            refreshSessionBars()
+        } catch (e: Exception) { _error.value = e.message }
+    }
+
     fun addBooking(tableId: Long, client: String, phone: String, timeMillis: Long, note: String = "") =
         viewModelScope.launch {
             try { repo.addBooking(tableId, client, phone, timeMillis, note) } catch (e: Exception) { _error.value = e.message }
@@ -294,6 +339,7 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
                 val check = repo.closeSession(tableId, discount, payment, clubName.value)
                 // check matnini tayyorlash
                 val items = if (check.sessionId != null) repo.barItemsForSession(check.sessionId!!) else emptyList()
+                val parts = if (check.sessionId != null) repo.partsForSession(check.sessionId!!) else emptyList()
                 // sessiya ma'lumotini topish uchun oxirgi yopilganlar orasidan
                 _lastCheck.value = check
                 _lastCheckItems.value = items
@@ -303,7 +349,7 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
                     it.replace("BAR:", "Stol: ${check.tableName}\nStol summasi: ${formatMoney(check.tableAmount)}\n---------------------------------\nBAR:")
                 }
                 // To'liq matn: sessiya bilan
-                val fullText = buildFullCheck(check, items)
+                val fullText = buildFullCheck(check, items, parts)
                 _lastCheckText.value = fullText
                 refreshTablesUi()
                 refreshSessionBars()
@@ -313,7 +359,11 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
             } catch (e: Exception) { _error.value = e.message }
         }
 
-    private suspend fun buildFullCheck(check: CheckReceipt, items: List<BarSaleItem>): String {
+    private suspend fun buildFullCheck(
+        check: CheckReceipt,
+        items: List<BarSaleItem>,
+        parts: List<SessionPart> = emptyList()
+    ): String {
         // sessiya topilmasa ham check ichidagi summalar bilan chiroyli matn
         val sb = StringBuilder()
         sb.appendLine("=================================")
@@ -323,6 +373,17 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
         sb.appendLine("Stol: ${check.tableName}")
         sb.appendLine("To'lov: ${check.paymentMethod}")
         sb.appendLine("---------------------------------")
+        if (parts.size > 1) {
+            sb.appendLine("PARTIYALAR (${parts.size} ta):")
+            parts.forEach { p ->
+                sb.appendLine(
+                    "  #${p.partNo}  ${formatHourMinute(p.startTime)}–${formatHourMinute(p.endTime)}  " +
+                        "${p.minutes} daq  ${formatMoney(p.amount)}"
+                )
+            }
+            sb.appendLine("Partiyalar jami: ${formatMoney(parts.sumOf { it.amount })}")
+            sb.appendLine("---------------------------------")
+        }
         sb.appendLine("Stol summasi: ${formatMoney(check.tableAmount)}")
         if (items.isNotEmpty()) {
             sb.appendLine("---------------------------------")
