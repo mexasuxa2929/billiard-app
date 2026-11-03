@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 env:
-  APP_VERSION: "2.6.1"
+  APP_VERSION: "2.6.2"
 
 jobs:
   windows:

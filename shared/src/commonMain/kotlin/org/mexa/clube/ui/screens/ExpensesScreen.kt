@@ -46,10 +46,12 @@ import org.mexa.clube.domain.currentMillis
 import org.mexa.clube.domain.formatDate
 import org.mexa.clube.domain.formatMoney
 import org.mexa.clube.domain.startOfDay
-import org.mexa.clube.domain.startOfMonth
 import org.mexa.clube.ui.ResponsiveScreen
 import org.mexa.clube.ui.components.ConfirmDialog
+import org.mexa.clube.ui.components.DateRangeBar
+import org.mexa.clube.ui.components.DateRangePreset
 import org.mexa.clube.ui.components.ProDatePickerDialog
+import org.mexa.clube.ui.components.allRange
 import org.mexa.clube.ui.theme.CategoryPill
 import org.mexa.clube.ui.theme.Pro
 import org.mexa.clube.ui.theme.ProButton
@@ -68,13 +70,16 @@ fun ExpensesScreen(vm: AppViewModel) {
     var showAdd by remember { mutableStateOf(false) }
     var edit by remember { mutableStateOf<Expense?>(null) }
     var delete by remember { mutableStateOf<Expense?>(null) }
+    var rangePreset by remember { mutableStateOf(DateRangePreset.ALL) }
+    var range by remember { mutableStateOf(allRange()) }
 
     val categories = remember { listOf("Barchasi") + EXPENSE_CATEGORIES }
     if (!categories.contains(category)) category = "Barchasi"
 
-    val filtered = remember(expenses, search, category) {
+    val filtered = remember(expenses, search, category, range) {
         expenses.filter { e ->
-            (category == "Barchasi" || e.category == category) &&
+            range.contains(e.spentAt) &&
+                (category == "Barchasi" || e.category == category) &&
                 (search.isBlank() ||
                     e.reason.contains(search, ignoreCase = true) ||
                     e.category.contains(search, ignoreCase = true) ||
@@ -82,11 +87,8 @@ fun ExpensesScreen(vm: AppViewModel) {
         }
     }
 
-    val now = currentMillis()
-    val todayStart = startOfDay(now)
-    val monthStart = startOfMonth(now)
-    val todayTotal = expenses.filter { it.spentAt >= todayStart }.sumOf { it.amount }
-    val monthTotal = expenses.filter { it.spentAt >= monthStart }.sumOf { it.amount }
+    val rangeExpenses = remember(expenses, range) { expenses.filter { range.contains(it.spentAt) } }
+    val rangeTotal = rangeExpenses.sumOf { it.amount }
     val filteredTotal = filtered.sumOf { it.amount }
 
     ResponsiveScreen { m ->
@@ -103,10 +105,17 @@ fun ExpensesScreen(vm: AppViewModel) {
                 )
             }
             StatChip("Jami:", "${expenses.size} ta")
-            StatChip("Bugun:", formatMoney(todayTotal), Pro.Red)
-            StatChip("Bu oy:", formatMoney(monthTotal), Pro.Red)
+            StatChip("Davr:", "${rangeExpenses.size} ta")
+            StatChip("Davr summasi:", formatMoney(rangeTotal), Pro.Red)
             ProButton("Xarajat qo'shish", { showAdd = true }, "+")
         }
+
+        DateRangeBar(
+            range = range,
+            preset = rangePreset,
+            onChange = { r, p -> range = r; rangePreset = p },
+            compact = m.compact
+        )
 
         ProCard(Modifier.fillMaxWidth()) {
             Column(

@@ -57,6 +57,14 @@ Bilyard xonasini boshqarish uchun desktop app.
 - **Sof foyda = JAMI daromad − xarajatlar − zametkalar.**
 - Hisobotda "stolga" va "alohida" savdo yorliqlari ko'rsatiladi, Excelda ham shu taqsimot bor.
 
+### 📅 Sana oralig'i (barcha hisob sahifalarida)
+- **Hisobotlar, Xarajatlar, Zametkalar va Tarix/Jurnal** sahifalarida bir xil panel:
+  **Bugun / Hafta / Oy / Jami / Oraliq**.
+- **Oraliq** → *Dan* va *Gacha* kalendarlaridan ixtiyoriy davr tanlanadi.
+- Tanlangan davr har doim panelda yozib ko'rsatiladi (masalan `📅 Davr: 01.11.2026 – 03.11.2026`),
+  shuning uchun qaysi davr hisoblanayotgani doim ko'rinib turadi.
+- Ro'yxatlar, jami summalar va kartalar tanlangan davr bo'yicha qayta hisoblanadi.
+
 ### 🧾 Chek
 - Chiroyli matnli chek: klub nomi, stol, davomiylik, tarif, **partiyalar ro'yxati va ularning jami**,
   bar pozitsiyalari, chegirma, JAMI.
@@ -64,6 +72,7 @@ Bilyard xonasini boshqarish uchun desktop app.
 
 ### 🧾 Tarix / Jurnal
 - Barcha harakatlar `logs` jadvalida: TABLE_START/STOP, BAR_SALE, PRODUCT, EXPENSE, NOTE, SYSTEM — summa bilan.
+- Yuqoridagi sana oralig'i paneli bilan kerakli davr tanlanadi; ro'yxat va summa shu davr bo'yicha ko'rsatiladi.
 
 ### ⚙️ Sozlamalar
 - Klub nomi, standart soatlik narx. Birinchi ishga tushishda 6 ta stol + 4 demo mahsulot avtomatik yaratiladi.

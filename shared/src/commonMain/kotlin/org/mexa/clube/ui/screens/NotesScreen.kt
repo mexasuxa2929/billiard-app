@@ -44,7 +44,10 @@ import org.mexa.clube.domain.formatMoney
 import org.mexa.clube.domain.startOfDay
 import org.mexa.clube.ui.ResponsiveScreen
 import org.mexa.clube.ui.components.ConfirmDialog
+import org.mexa.clube.ui.components.DateRangeBar
+import org.mexa.clube.ui.components.DateRangePreset
 import org.mexa.clube.ui.components.ProDatePickerDialog
+import org.mexa.clube.ui.components.allRange
 import org.mexa.clube.ui.theme.CategoryPill
 import org.mexa.clube.ui.theme.Pro
 import org.mexa.clube.ui.theme.ProButton
@@ -65,17 +68,19 @@ fun NotesScreen(vm: AppViewModel) {
     var showAdd by remember { mutableStateOf(false) }
     var edit by remember { mutableStateOf<Note?>(null) }
     var delete by remember { mutableStateOf<Note?>(null) }
+    var rangePreset by remember { mutableStateOf(DateRangePreset.ALL) }
+    var range by remember { mutableStateOf(allRange(includeFuture = true)) }
 
     val todayStart = startOfDay(currentMillis())
 
-    val filtered = remember(notes, search, filter, todayStart) {
+    val filtered = remember(notes, search, filter, todayStart, range) {
         notes.filter { n ->
             val matchesFilter = when (filter) {
                 "Kelayotgan" -> n.noteDate >= todayStart
                 "O'tgan" -> n.noteDate < todayStart
                 else -> true
             }
-            matchesFilter && (search.isBlank() ||
+            range.contains(n.noteDate) && matchesFilter && (search.isBlank() ||
                 n.reason.contains(search, ignoreCase = true) ||
                 n.note.contains(search, ignoreCase = true))
         }
@@ -83,6 +88,8 @@ fun NotesScreen(vm: AppViewModel) {
 
     val upcoming = notes.filter { it.noteDate >= todayStart }
     val upcomingSum = upcoming.sumOf { it.amount }
+    val rangeNotes = remember(notes, range) { notes.filter { range.contains(it.noteDate) } }
+    val rangeSum = rangeNotes.sumOf { it.amount }
     val filteredSum = filtered.sumOf { it.amount }
 
     ResponsiveScreen { m ->
@@ -99,10 +106,20 @@ fun NotesScreen(vm: AppViewModel) {
                 )
             }
             StatChip("Jami:", "${notes.size} ta")
+            StatChip("Davr:", "${rangeNotes.size} ta")
+            StatChip("Davr summasi:", formatMoney(rangeSum), Pro.Amber)
             StatChip("Kelayotgan:", "${upcoming.size} ta", Pro.Amber)
             StatChip("Kelayotgan summa:", formatMoney(upcomingSum), Pro.Amber)
             ProButton("Zametka qo'shish", { showAdd = true }, "+")
         }
+
+        DateRangeBar(
+            range = range,
+            preset = rangePreset,
+            onChange = { r, p -> range = r; rangePreset = p },
+            compact = m.compact,
+            includeFutureInAll = true
+        )
 
         Text(
             "Zametka summasi hisobotda sof foydadan ayriladi (sana bo'yicha hisobga olinadi).",

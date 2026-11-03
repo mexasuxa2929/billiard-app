@@ -488,6 +488,7 @@ class BilliardRepository(
     suspend fun closedSessionsBetween(from: Long, to: Long): List<TableSession> = db.sessionDao().getBetween(from, to)
     suspend fun lastChecks(limit: Int = 50): List<CheckReceipt> = db.checkDao().getLast(limit)
     suspend fun lastLogs(limit: Int = 100): List<MovementLog> = db.logDao().getLast(limit)
+    suspend fun logsBetween(from: Long, to: Long): List<MovementLog> = db.logDao().getBetween(from, to)
 
     private suspend fun log(type: String, desc: String, amount: Double) {
         db.logDao().insert(MovementLog(timestamp = currentMillis(), type = type, description = desc, amount = amount))

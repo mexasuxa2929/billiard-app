@@ -36,23 +36,43 @@ import androidx.compose.ui.unit.sp
 import org.mexa.clube.domain.formatMoney
 import org.mexa.clube.domain.formatTime
 import org.mexa.clube.ui.ResponsiveScreen
+import org.mexa.clube.ui.components.DateRangeBar
+import org.mexa.clube.ui.components.DateRangePreset
+import org.mexa.clube.ui.components.allRange
 import org.mexa.clube.ui.theme.Pro
 import org.mexa.clube.ui.theme.ProButton
 import org.mexa.clube.ui.theme.ProCard
+import org.mexa.clube.ui.theme.StatChip
 import org.mexa.clube.ui.viewmodel.AppViewModel
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HistoryScreen(vm: AppViewModel) {
     val logs by vm.logs.collectAsState()
-    LaunchedEffect(Unit) { vm.loadLogs() }
+    var rangePreset by remember { mutableStateOf(DateRangePreset.ALL) }
+    var range by remember { mutableStateOf(allRange()) }
+    LaunchedEffect(range) { vm.loadLogsRange(range.from, range.toExclusive) }
+    val amountSum = logs.sumOf { it.amount }
     ResponsiveScreen { m ->
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        FlowRow(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("🧾", fontSize = 22.sp)
-                Text("Tarix / Jurnal (${logs.size})", color = Pro.TextMain, fontWeight = FontWeight.Black, fontSize = if (m.compact) 17.sp else 20.sp)
+                Text("Tarix / Jurnal", color = Pro.TextMain, fontWeight = FontWeight.Black, fontSize = if (m.compact) 17.sp else 20.sp)
             }
-            ProButton("Yangilash", { vm.loadLogs() }, "↻")
+            StatChip("Yozuvlar:", "${logs.size} ta")
+            StatChip("Summa:", formatMoney(amountSum), Pro.Green)
+            ProButton("Yangilash", { vm.loadLogsRange(range.from, range.toExclusive) }, "↻")
         }
+        DateRangeBar(
+            range = range,
+            preset = rangePreset,
+            onChange = { r, p -> range = r; rangePreset = p },
+            compact = m.compact
+        )
         ProCard(Modifier.fillMaxWidth().weight(1f)) {
             LazyColumn(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(logs, key = { it.id }) { l ->

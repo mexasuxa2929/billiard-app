@@ -27,7 +27,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Deb)
             packageName = "BilliardClubManager"
-            packageVersion = "2.6.1"
+            packageVersion = "2.6.2"
             description = "Billiard Club Manager - bilyard xonasi boshqaruv dasturi"
             copyright = "Copyright (c) 2026 MEXA"
             vendor = "MEXA"

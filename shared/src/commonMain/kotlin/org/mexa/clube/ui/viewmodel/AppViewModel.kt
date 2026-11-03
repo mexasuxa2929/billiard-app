@@ -576,6 +576,11 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
         try { _logs.value = repo.lastLogs(200) } catch (e: Exception) { _error.value = e.message }
     }
 
+    /** Tarix / jurnal — tanlangan sana oralig'i bo'yicha. */
+    fun loadLogsRange(from: Long, toExclusive: Long) = viewModelScope.launch {
+        try { _logs.value = repo.logsBetween(from, toExclusive) } catch (e: Exception) { _error.value = e.message }
+    }
+
     companion object {
         /** period: 0-kunlik, 1-haftalik, 2-oylik, else-barchasi. Returns (from, toExclusive). */
         fun periodRange(period: Int, now: Long): Pair<Long, Long> = when (period) {
