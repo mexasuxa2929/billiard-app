@@ -38,12 +38,13 @@ Bilyard xonasini boshqarish uchun desktop app.
 - Ro'yxatda qidiruv, «Kelayotgan / O'tgan» filtri, tahrirlash va **o'chirish**.
 - Yuqorida kelayotgan zametkalar soni va umumiy summasi ko'rsatiladi.
 - Summa kiritilmasa ham bo'ladi — oddiy eslatma sifatida saqlanadi.
-- Zametkalar hisobot daromadiga ta'sir qilmaydi (bu eslatma daftari, xarajat emas).
+- **Zametka summasi hisobotda sof foydadan ayriladi** — sanasi hisobot davriga tushadigan zametkalar yig'indisi ayriladi.
+- Summasiz zametkalar faqat eslatma bo'lib qoladi (foydaga ta'sir qilmaydi).
 
 ### 📊 Hisobotlar
 - **Kunlik / Haftalik / Oylik / Jami** tablar.
 - Kartalar: Stol daromadi, Bar savdo, Bar foydasi (sotish−kirish), JAMI daromad,
-  Xarajatlar va Sof foyda.
+  Xarajatlar, Zametkalar va Sof foyda.
 - Sessiyalar soni, chegirmalar, TOP-10 mahsulot, cheklar ro'yxati.
 
 **Hisobot qoidasi (chalkashmasligi uchun):**
@@ -53,7 +54,7 @@ Bilyard xonasini boshqarish uchun desktop app.
   bekor qilingan sessiyalarning savdosi esa hisobotga kirmaydi.
 - **JAMI daromad = Stollar + Bar savdo − chegirma.** Stol kartasidagi jami summada bar bo'lsa ham,
   u bar qatorida bir marta hisoblanadi — ikki marta qo'shilmaydi.
-- **Sof foyda = JAMI daromad − xarajatlar.**
+- **Sof foyda = JAMI daromad − xarajatlar − zametkalar.**
 - Hisobotda "stolga" va "alohida" savdo yorliqlari ko'rsatiladi, Excelda ham shu taqsimot bor.
 
 ### 🧾 Chek

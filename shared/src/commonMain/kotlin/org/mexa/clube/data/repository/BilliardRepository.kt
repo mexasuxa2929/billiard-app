@@ -421,6 +421,8 @@ class BilliardRepository(
         val tableRev = sessions.sumOf { it.tableSum }
         val discount = sessions.sumOf { it.discount }
         val expenseTotal = db.expenseDao().getBetween(from, to).sumOf { it.amount }
+        // Zametkalar summalari ham sof foydadan ayriladi (sana bo'yicha davr ichida).
+        val noteTotal = db.noteDao().getBetween(from, to).sumOf { it.amount }
 
         var barTableRev = 0.0
         var barTableCost = 0.0
@@ -458,7 +460,8 @@ class BilliardRepository(
             discount = discount,
             totalRevenue = tableRev + barRev - discount,
             expenses = expenseTotal,
-            netProfit = tableRev + barRev - discount - expenseTotal,
+            notes = noteTotal,
+            netProfit = tableRev + barRev - discount - expenseTotal - noteTotal,
             topProducts = grouped
         )
     }

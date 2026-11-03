@@ -9,6 +9,7 @@ import org.mexa.clube.data.BilliardDatabase
 import org.mexa.clube.data.entity.BarSale
 import org.mexa.clube.data.entity.BarSaleItem
 import org.mexa.clube.data.entity.BilliardTable
+import org.mexa.clube.data.entity.Note
 import org.mexa.clube.data.entity.Product
 import org.mexa.clube.data.entity.TableSession
 import org.mexa.clube.data.getRoomDatabase
@@ -303,6 +304,26 @@ class ReportTest {
         assertEquals(1, monthDt.day)
         assertEquals(0, monthDt.hour)
         assertTrue(month <= now)
+    }
+
+    /** Zametka summasi sof foydadan ayriladi. */
+    @Test
+    fun noteAmountsReduceNetProfit() = runBlocking {
+        val db = newDb()
+        val repo = BilliardRepository(db)
+        val base = startOfDay(currentMillis())
+        insertSession(db, start = base + 10 * H, end = base + 11 * H, tableSum = 60000.0, discount = 0.0)
+        db.noteDao().upsert(Note(noteDate = base + 12 * H, reason = "Ta'mirlash", amount = 15000.0))
+        // Davr tashqarisidagi zametka hisobotga kirmaydi.
+        db.noteDao().upsert(Note(noteDate = base + 2 * DAY, reason = "Keyingi kun", amount = 5000.0))
+
+        val r = repo.report(base, base + DAY)
+        assertEquals(15000.0, r.notes)
+        assertEquals(45000.0, r.netProfit)
+
+        val nextDay = repo.report(base + 2 * DAY, base + 3 * DAY)
+        assertEquals(5000.0, nextDay.notes)
+        assertEquals(-5000.0, nextDay.netProfit)
     }
 
     // ---------- helpers ----------

@@ -196,6 +196,12 @@ fun ReportsScreen(vm: AppViewModel) {
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         StatPro("💸 Xarajatlar", formatMoney(r.expenses), Pro.Red, Modifier.weight(1f))
+                        StatPro(
+                            "📝 Zametkalar", formatMoney(r.notes), Pro.Red, Modifier.weight(1f),
+                            subtitle = "foydadan ayriladi"
+                        )
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         StatPro("📈 Sof foyda", formatMoney(r.netProfit), Pro.Green, Modifier.weight(1f))
                     }
                 }
@@ -214,6 +220,10 @@ fun ReportsScreen(vm: AppViewModel) {
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(m.cardSpacing)) {
                     StatPro("💸 Xarajatlar", formatMoney(r.expenses), Pro.Red, Modifier.weight(1f))
+                    StatPro(
+                        "📝 Zametkalar", formatMoney(r.notes), Pro.Red, Modifier.weight(1f),
+                        subtitle = "foydadan ayriladi"
+                    )
                     StatPro("📈 Sof foyda", formatMoney(r.netProfit), Pro.Green, Modifier.weight(1f))
                 }
             }
@@ -224,7 +234,8 @@ fun ReportsScreen(vm: AppViewModel) {
             Text(
                 "Stollar — faqat vaqt puli. Bar savdo/foyda stolga biriktirilgan savdoni ham o'z ichiga oladi " +
                     "(stol yopilganda hisobga olinadi, bekor qilingan sessiyalar kirmaydi). " +
-                    "JAMI daromad = Stollar + Bar savdo − chegirma; Sof foyda = JAMI daromad − xarajatlar. " +
+                    "JAMI daromad = Stollar + Bar savdo − chegirma; " +
+                    "Sof foyda = JAMI daromad − xarajatlar − zametkalar. " +
                     "Bar summasi ikki marta hisoblanmaydi.",
                 color = Pro.TextFaint, fontSize = 11.sp
             )

@@ -189,7 +189,9 @@ data class ReportSummary(
     val totalRevenue: Double = 0.0,
     /** Davr ichidagi xarajatlar yig'indisi. */
     val expenses: Double = 0.0,
-    /** Sof foyda = JAMI daromad − xarajatlar. */
+    /** Davr ichidagi zametkalar summasi (sof foydadan ayriladi). */
+    val notes: Double = 0.0,
+    /** Sof foyda = JAMI daromad − xarajatlar − zametkalar. */
     val netProfit: Double = 0.0,
     val topProducts: List<TopProduct> = emptyList()
 )

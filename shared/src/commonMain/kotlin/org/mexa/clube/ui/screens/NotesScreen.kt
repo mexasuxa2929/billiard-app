@@ -104,6 +104,11 @@ fun NotesScreen(vm: AppViewModel) {
             ProButton("Zametka qo'shish", { showAdd = true }, "+")
         }
 
+        Text(
+            "Zametka summasi hisobotda sof foydadan ayriladi (sana bo'yicha hisobga olinadi).",
+            color = Pro.TextFaint, fontSize = 11.sp
+        )
+
         ProCard(Modifier.fillMaxWidth()) {
             Column(
                 Modifier.fillMaxWidth().padding(if (m.compact) 10.dp else 12.dp),

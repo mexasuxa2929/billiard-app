@@ -268,6 +268,10 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE id = :id LIMIT 1")
     suspend fun getById(id: Long): Note?
 
+    /** Davr ichidagi zametkalar (hisobotda foydadan ayriladi). */
+    @Query("SELECT * FROM notes WHERE noteDate >= :from AND noteDate < :to ORDER BY noteDate")
+    suspend fun getBetween(from: Long, to: Long): List<Note>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(note: Note): Long
 
