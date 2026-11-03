@@ -6,6 +6,7 @@ import org.apache.poi.ss.usermodel.IndexedColors
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.mexa.clube.data.entity.CheckReceipt
+import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.TableSession
 import org.mexa.clube.domain.Billing
 import org.mexa.clube.domain.ReportSummary
@@ -112,6 +113,62 @@ actual object ExcelExporter {
                 money(r, 3, t.revenue, moneyStyle)
             }
             autosize(s3, 4)
+
+            FileOutputStream(file).use { out -> wb.write(out) }
+        }
+        return file.absolutePath
+    }
+
+    actual fun exportExpenses(filePath: String, expenses: List<Expense>): String {
+        val file = File(filePath)
+        file.parentFile?.mkdirs()
+        XSSFWorkbook().use { wb ->
+            val headerStyle = wb.createCellStyle().apply {
+                val f = wb.createFont().apply { bold = true; color = IndexedColors.WHITE.index }
+                setFont(f)
+                fillForegroundColor = IndexedColors.DARK_GREEN.index
+                fillPattern = FillPatternType.SOLID_FOREGROUND
+                alignment = HorizontalAlignment.CENTER
+            }
+            val moneyFmt = wb.createDataFormat().getFormat("#,##0")
+            val moneyStyle = wb.createCellStyle().apply { dataFormat = moneyFmt }
+            val wrapStyle = wb.createCellStyle().apply {
+                wrapText = true
+                verticalAlignment = org.apache.poi.ss.usermodel.VerticalAlignment.TOP
+            }
+            val totalStyle = wb.createCellStyle().apply {
+                val f = wb.createFont().apply { bold = true }
+                setFont(f)
+                dataFormat = moneyFmt
+            }
+
+            val sheet = wb.createSheet("Xarajatlar")
+            // Dasturdagi jadval ustunlari bilan bir xil.
+            header(sheet, arrayOf("SANA", "SABAB", "KATEGORIYA", "TO'LOV", "SUMMA"), headerStyle)
+
+            var total = 0.0
+            expenses.forEachIndexed { i, e ->
+                val r = sheet.createRow(i + 1)
+                r.createCell(0).setCellValue(formatDate(e.spentAt))
+                // Dasturda izoh sabab ostida ko'rinadi — Excelda ham shu katakda.
+                val reason = if (e.note.isBlank()) e.reason else "${e.reason}\n${e.note}"
+                r.createCell(1).apply { setCellValue(reason); cellStyle = wrapStyle }
+                r.createCell(2).setCellValue(e.category)
+                r.createCell(3).setCellValue(e.paymentMethod)
+                money(r, 4, e.amount, moneyStyle)
+                total += e.amount
+            }
+
+            val totalRow = sheet.createRow(expenses.size + 1)
+            totalRow.createCell(0).setCellValue("JAMI")
+            totalRow.createCell(1).setCellValue("${expenses.size} ta xarajat")
+            totalRow.createCell(4).apply { setCellValue(total); cellStyle = totalStyle }
+
+            sheet.setColumnWidth(0, 14 * 256)
+            sheet.setColumnWidth(1, 46 * 256)
+            sheet.setColumnWidth(2, 18 * 256)
+            sheet.setColumnWidth(3, 12 * 256)
+            sheet.setColumnWidth(4, 16 * 256)
 
             FileOutputStream(file).use { out -> wb.write(out) }
         }

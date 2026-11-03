@@ -3,6 +3,7 @@ package org.mexa.clube
 import kotlinx.coroutines.runBlocking
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.mexa.clube.data.entity.CheckReceipt
+import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.TableSession
 import org.mexa.clube.domain.ReportSummary
 import org.mexa.clube.domain.TopProduct
@@ -118,6 +119,58 @@ class ExportTest {
                     val tRow = wb.getSheetAt(3).getRow(1)
                     assertEquals("Choy", tRow.getCell(1).stringCellValue)
                     assertNotNull(tRow.getCell(3))
+                }
+            }
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun exportExpensesMatchesTableColumns() {
+        val dir = File(System.getProperty("java.io.tmpdir"), "billiard-expenses-${System.nanoTime()}")
+        try {
+            val base = startOfDay(currentMillis())
+            val items = listOf(
+                Expense(
+                    spentAt = base, reason = "Elektr", category = "Kommunal",
+                    amount = 120000.0, paymentMethod = "Naqd", note = "Yanvar uchun"
+                ),
+                Expense(
+                    spentAt = base + 3600_000L, reason = "Suv", category = "Kommunal",
+                    amount = 30000.0, paymentMethod = "Karta"
+                )
+            )
+            val path = ExcelExporter.exportExpenses(
+                File(dir, "xarajatlar_test.xlsx").absolutePath, items
+            )
+            val file = File(path)
+            assertTrue(file.exists() && file.length() > 0)
+
+            FileInputStream(file).use { ins ->
+                XSSFWorkbook(ins).use { wb ->
+                    val sheet = wb.getSheetAt(0)
+                    assertEquals("Xarajatlar", wb.getSheetName(0))
+                    // Ustunlar dasturdagi jadval bilan bir xil.
+                    val head = sheet.getRow(0)
+                    assertEquals("SANA", head.getCell(0).stringCellValue)
+                    assertEquals("SABAB", head.getCell(1).stringCellValue)
+                    assertEquals("KATEGORIYA", head.getCell(2).stringCellValue)
+                    assertEquals("TO'LOV", head.getCell(3).stringCellValue)
+                    assertEquals("SUMMA", head.getCell(4).stringCellValue)
+
+                    val first = sheet.getRow(1)
+                    assertEquals(formatDate(base), first.getCell(0).stringCellValue)
+                    assertTrue(first.getCell(1).stringCellValue.contains("Elektr"))
+                    assertTrue(first.getCell(1).stringCellValue.contains("Yanvar"))
+                    assertEquals("Kommunal", first.getCell(2).stringCellValue)
+                    assertEquals("Naqd", first.getCell(3).stringCellValue)
+                    assertEquals(120000.0, first.getCell(4).numericCellValue)
+
+                    // JAMI qatori
+                    val total = sheet.getRow(3)
+                    assertEquals("JAMI", total.getCell(0).stringCellValue)
+                    assertEquals(150000.0, total.getCell(4).numericCellValue)
                 }
             }
         } finally {

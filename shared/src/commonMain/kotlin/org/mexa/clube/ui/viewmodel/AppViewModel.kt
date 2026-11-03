@@ -572,6 +572,26 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
         onDone(path)
     }
 
+    /** Xarajatlar ro'yxatini Excel (.xlsx) ga eksport qilish. */
+    fun exportExpenses(items: List<Expense>, onDone: (String) -> Unit = {}) = viewModelScope.launch {
+        try {
+            var dir = repo.getSetting("export_dir", "")
+            if (dir.isBlank()) {
+                dir = org.mexa.clube.ui.export.ExcelExporter.defaultDir()
+                repo.setSetting("export_dir", dir)
+                exportDir.value = dir
+            }
+            val stamp = formatFileStamp(currentMillis())
+            val path = org.mexa.clube.ui.export.ExcelExporter.exportExpenses(
+                "$dir/xarajatlar_$stamp.xlsx", items
+            )
+            _exportResult.value = path
+            onDone(path)
+        } catch (e: Exception) {
+            _error.value = "Eksport xatosi: ${e.message}"
+        }
+    }
+
     fun loadLogs() = viewModelScope.launch {
         try { _logs.value = repo.lastLogs(200) } catch (e: Exception) { _error.value = e.message }
     }

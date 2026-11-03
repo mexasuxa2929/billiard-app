@@ -31,7 +31,10 @@ Bilyard xonasini boshqarish uchun desktop app.
 - Xarajat qo'shish: **sababi** (majburiy), kategoriya, summa, to'lov turi, sana va izoh.
 - Kategoriyalar: Oylik, Ijara, Kommunal, Ta'mirlash, Mahsulot, Transport, Boshqa.
 - Ro'yxatda qidiruv, kategoriya bo'yicha filtr, tahrirlash va o'chirish.
-- Kunlik / oylik / umumiy xarajat summasi ko'rsatiladi.
+- Sana oralig'i paneli: Bugun / Hafta / Oy / Jami / Oraliq bo'yicha filtr va davr summasi.
+- **📥 Excel eksporti**: ko'rinib turgan ro'yxat `.xlsx` ga yoziladi.
+  Ustunlar dasturdagi jadval bilan bir xil: **SANA | SABAB | KATEGORIYA | TO'LOV | SUMMA**
+  (izoh sabab ostida shu katakda chiqadi), oxirida **JAMI** qatori.
 
 ### 📝 Zametkalar
 - Zametka qo'shish: **sana**, **sabab** (majburiy) va **qancha pul** + ixtiyoriy izoh.

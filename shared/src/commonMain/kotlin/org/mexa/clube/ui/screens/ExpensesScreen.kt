@@ -72,6 +72,7 @@ fun ExpensesScreen(vm: AppViewModel) {
     var delete by remember { mutableStateOf<Expense?>(null) }
     var rangePreset by remember { mutableStateOf(DateRangePreset.ALL) }
     var range by remember { mutableStateOf(allRange()) }
+    val exportResult by vm.exportResult.collectAsState()
 
     val categories = remember { listOf("Barchasi") + EXPENSE_CATEGORIES }
     if (!categories.contains(category)) category = "Barchasi"
@@ -107,6 +108,7 @@ fun ExpensesScreen(vm: AppViewModel) {
             StatChip("Jami:", "${expenses.size} ta")
             StatChip("Davr:", "${rangeExpenses.size} ta")
             StatChip("Davr summasi:", formatMoney(rangeTotal), Pro.Red)
+            ProButton("Excel", { vm.exportExpenses(filtered) }, "📥")
             ProButton("Xarajat qo'shish", { showAdd = true }, "+")
         }
 
@@ -207,6 +209,15 @@ fun ExpensesScreen(vm: AppViewModel) {
             message = "«${e.reason}» (${formatMoney(e.amount)}) o'chiriladi. Davom etasizmi?",
             onDismiss = { delete = null },
             onConfirm = { vm.deleteExpense(e.id) { delete = null } }
+        )
+    }
+    exportResult?.let { path ->
+        AlertDialog(
+            onDismissRequest = { vm.clearExportResult() },
+            title = { Text("📥 Eksport tayyor") },
+            text = { Text("Fayl saqlandi:\n$path", color = Pro.TextDim) },
+            confirmButton = { TextButton(onClick = { vm.clearExportResult() }) { Text("Yopish") } },
+            dismissButton = {}
         )
     }
 }

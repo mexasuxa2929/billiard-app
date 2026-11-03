@@ -1,6 +1,7 @@
 package org.mexa.clube.ui.export
 
 import org.mexa.clube.data.entity.CheckReceipt
+import org.mexa.clube.data.entity.Expense
 import org.mexa.clube.data.entity.TableSession
 import org.mexa.clube.domain.ReportSummary
 
@@ -15,4 +16,7 @@ expect object ExcelExporter {
         sessions: List<TableSession>,
         checks: List<CheckReceipt>
     ): String
+
+    /** Xarajatlar ro'yxatini .xlsx ga yozadi (ustunlar dasturdagi jadval bilan bir xil). */
+    fun exportExpenses(filePath: String, expenses: List<Expense>): String
 }
