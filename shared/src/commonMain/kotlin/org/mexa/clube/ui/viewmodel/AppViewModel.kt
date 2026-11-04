@@ -482,6 +482,15 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
         } catch (e: Exception) { _error.value = e.message }
     }
 
+    /** Xato yozilgan chekni hisobotlar tarixidan o'chirish (faqat chek yozuvi). */
+    fun deleteCheck(check: CheckReceipt, onDone: () -> Unit = {}) = viewModelScope.launch {
+        try {
+            repo.deleteCheck(check.id)
+            _checks.value = _checks.value.filterNot { it.id == check.id }
+            onDone()
+        } catch (e: Exception) { _error.value = e.message }
+    }
+
     fun deleteBarItem(item: BarSaleItem, onDone: () -> Unit = {}) = viewModelScope.launch {
         try {
             repo.deleteBarItem(item.id)

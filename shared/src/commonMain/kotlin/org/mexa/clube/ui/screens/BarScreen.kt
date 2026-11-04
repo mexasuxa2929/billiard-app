@@ -100,6 +100,8 @@ fun BarScreen(vm: AppViewModel) {
     val lowCount = products.count { it.stockQty <= LOW_STOCK }
     val okCount = products.size - lowCount
     val kassa = products.sumOf { it.sellPrice * it.stockQty }
+    // Omborda turgan mahsulotlarning tannarxi (kirish narxi bo'yicha).
+    val omborTannarx = products.sumOf { it.buyPrice * it.stockQty }
 
     var filtered = products.filter {
         (category == "Barchasi" || it.category == category) &&
@@ -127,6 +129,7 @@ fun BarScreen(vm: AppViewModel) {
             }
             StatChip("Jami mahsulot:", "${products.size} xil")
             StatChip("Ombor qoldig'i:", "${totalStock.toLong()} dona")
+            StatChip("Ombor tannarxi:", formatMoney(omborTannarx), Pro.Amber)
             Row(
                 Modifier.background(Pro.AmberBg, RoundedCornerShape(8.dp))
                     .border(1.dp, Color(0xFF6B4E12), RoundedCornerShape(8.dp))
@@ -238,7 +241,7 @@ fun BarScreen(vm: AppViewModel) {
                     }
                 }
                 HorizontalDivider(color = Pro.CardBorder, thickness = 1.dp)
-                BarFooter(filtered.size, okCount, lowCount, kassa)
+                BarFooter(filtered.size, okCount, lowCount, kassa, omborTannarx)
             }
         }
     }
@@ -412,7 +415,7 @@ private fun PriceCell(label: String, value: String, color: Color, modifier: Modi
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun BarFooter(shown: Int, okCount: Int, lowCount: Int, kassa: Double) {
+private fun BarFooter(shown: Int, okCount: Int, lowCount: Int, kassa: Double, tannarx: Double) {
     FlowRow(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -426,6 +429,10 @@ private fun BarFooter(shown: Int, okCount: Int, lowCount: Int, kassa: Double) {
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(7.dp).clip(CircleShape).background(Pro.Amber))
             Text("Kam ($lowCount)", color = Pro.TextDim, fontSize = 12.sp)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Tannarx:", color = Pro.TextFaint, fontSize = 12.sp)
+            Text(formatMoney(tannarx), color = Pro.Amber, fontWeight = FontWeight.Bold, fontSize = 13.sp)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Kassa:", color = Pro.TextFaint, fontSize = 12.sp)

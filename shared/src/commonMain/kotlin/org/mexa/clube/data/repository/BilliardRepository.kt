@@ -484,6 +484,7 @@ class BilliardRepository(
     }
 
     suspend fun checksBetween(from: Long, to: Long): List<CheckReceipt> = db.checkDao().getBetween(from, to)
+    suspend fun deleteCheck(id: Long) = db.checkDao().deleteById(id)
     suspend fun sessionById(id: Long): TableSession? = db.sessionDao().getById(id)
     suspend fun closedSessionsBetween(from: Long, to: Long): List<TableSession> = db.sessionDao().getBetween(from, to)
     suspend fun lastChecks(limit: Int = 50): List<CheckReceipt> = db.checkDao().getLast(limit)

@@ -25,6 +25,8 @@ Bilyard xonasini boshqarish uchun desktop app.
 ### 🍺 Bar
 - Mahsulot: nomi, kategoriya, **kirish narxi**, **sotish narxi**, qoldiq, birlik.
 - Qidiruv, kirim (`+` omborga), tahrirlash, o'chirish.
+- **Ombor tannarxi** — qoldiqdagi mahsulotlarning **kirish narxi** bo'yicha umumiy summasi
+  (pastda «Tannarx», yonida sotish qiymati «Kassa» ko'rsatiladi).
 - `To'g'ridan-to'g'ri savdo` — stolsiz mijozga sotish (alohida chek + jurnal).
 
 ### 💸 Xarajatlar
@@ -49,6 +51,8 @@ Bilyard xonasini boshqarish uchun desktop app.
 - Kartalar: Stol daromadi, Bar savdo, Bar foydasi (sotish−kirish), JAMI daromad,
   Xarajatlar, Zametkalar va Sof foyda.
 - Sessiyalar soni, chegirmalar, TOP-10 mahsulot, cheklar ro'yxati.
+- Xato yozilgan chekni **🗑 o'chirish** (tasdiqlash bilan). Faqat chek yozuvi o'chadi —
+  sessiya/savdo summasi hisobotda qoladi.
 
 **Hisobot qoidasi (chalkashmasligi uchun):**
 - **Stollar** kartasi — faqat vaqt puli (`tableSum`).

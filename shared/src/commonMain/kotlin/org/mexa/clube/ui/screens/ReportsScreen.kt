@@ -40,6 +40,7 @@ import org.mexa.clube.domain.ReportSummary
 import org.mexa.clube.domain.formatMoney
 import org.mexa.clube.domain.formatTime
 import org.mexa.clube.ui.ResponsiveScreen
+import org.mexa.clube.ui.components.ConfirmDialog
 import org.mexa.clube.ui.components.DateRangeBar
 import org.mexa.clube.ui.components.DateRangePreset
 import org.mexa.clube.ui.components.todayRange
@@ -56,6 +57,7 @@ fun ReportsScreen(vm: AppViewModel) {
     val checkText by vm.lastCheckText.collectAsState()
     val exportResult by vm.exportResult.collectAsState()
     var showCheck by remember { mutableStateOf(false) }
+    var checkToDelete by remember { mutableStateOf<CheckReceipt?>(null) }
 
     LaunchedEffect(range) { vm.loadCustomReport(range.from, range.toExclusive) }
 
@@ -155,12 +157,22 @@ fun ReportsScreen(vm: AppViewModel) {
             if (m.compact) {
                 Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     TopProductsCard(r, Modifier.fillMaxWidth().weight(1f))
-                    ChecksCard(checks, onReprint = { vm.reprintCheck(it) { showCheck = true } }, modifier = Modifier.fillMaxWidth().weight(1f))
+                    ChecksCard(
+                        checks,
+                        onReprint = { vm.reprintCheck(it) { showCheck = true } },
+                        onDelete = { checkToDelete = it },
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    )
                 }
             } else {
                 Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(m.cardSpacing)) {
                     TopProductsCard(r, Modifier.weight(1f))
-                    ChecksCard(checks, onReprint = { vm.reprintCheck(it) { showCheck = true } }, modifier = Modifier.weight(2f))
+                    ChecksCard(
+                        checks,
+                        onReprint = { vm.reprintCheck(it) { showCheck = true } },
+                        onDelete = { checkToDelete = it },
+                        modifier = Modifier.weight(2f)
+                    )
                 }
             }
         } else {
@@ -180,6 +192,15 @@ fun ReportsScreen(vm: AppViewModel) {
 
     if (showCheck) {
         CheckDialog(text = checkText.ifBlank { "Yuklanmoqda..." }, onDismiss = { showCheck = false })
+    }
+    checkToDelete?.let { c ->
+        ConfirmDialog(
+            title = "Chekni o'chirish?",
+            message = "#${c.id} ${c.tableName} • ${formatMoney(c.totalAmount)}\n\n" +
+                "Faqat chek yozuvi o'chiriladi — sessiya/savdo summasi hisobotda qoladi.",
+            onDismiss = { checkToDelete = null },
+            onConfirm = { vm.deleteCheck(c) { checkToDelete = null } }
+        )
     }
 }
 
@@ -207,6 +228,7 @@ private fun TopProductsCard(r: ReportSummary, modifier: Modifier = Modifier) {
 private fun ChecksCard(
     checks: List<CheckReceipt>,
     onReprint: (CheckReceipt) -> Unit,
+    onDelete: (CheckReceipt) -> Unit,
     modifier: Modifier = Modifier
 ) {
     ProCard(modifier) {
@@ -239,6 +261,9 @@ private fun ChecksCard(
                             )
                             TextButton(onClick = { onReprint(c) }) {
                                 Text("🖨", color = Pro.TextDim, fontSize = 13.sp)
+                            }
+                            TextButton(onClick = { onDelete(c) }) {
+                                Text("🗑", color = Pro.Red, fontSize = 13.sp)
                             }
                         }
                     }
