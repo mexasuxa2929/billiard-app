@@ -13,6 +13,7 @@ import java.io.File
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 private const val DAY = 24L * 3600 * 1000
@@ -97,5 +98,23 @@ class NoteTest {
 
         repo.deleteNote(id)
         assertTrue(repo.notes.first().isEmpty())
+    }
+
+    @Test
+    fun handedOverFlagIsSavedAndCanBeReturned() = runBlocking {
+        val db = newDb()
+        val repo = BilliardRepository(db)
+        val today = startOfDay(currentMillis())
+
+        repo.saveNote(
+            Note(noteDate = today, reason = "Kunlik atchot", amount = 250_000.0, handedOver = true)
+        )
+        val saved = repo.notes.first().first()
+        assertTrue(saved.handedOver, "atchot topshirilgan deb saqlanishi kerak")
+        assertEquals(250_000.0, saved.amount)
+
+        // Belgilashni bekor qilsa — zametka oddiy holatga qaytadi.
+        repo.saveNote(saved.copy(handedOver = false))
+        assertFalse(repo.notes.first().first().handedOver)
     }
 }

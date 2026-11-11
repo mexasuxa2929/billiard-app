@@ -40,11 +40,20 @@ Bilyard xonasini boshqarish uchun desktop app.
 
 ### 📝 Zametkalar
 - Zametka qo'shish: **sana**, **sabab** (majburiy) va **qancha pul** + ixtiyoriy izoh.
-- Ro'yxatda qidiruv, «Kelayotgan / O'tgan» filtri, tahrirlash va **o'chirish**.
+- Ro'yxatda qidiruv, «Kelayotgan / O'tgan / Topshirilgan» filtri, tahrirlash va **o'chirish**.
+- Zametka oynasida **«✅ Atchot topshirildi»** checkbox'i: belgilab saqlansa, summa
+  **«Topshirilgan atchot»** bo'limiga o'tadi.
 - Yuqorida kelayotgan zametkalar soni va umumiy summasi ko'rsatiladi.
 - Summa kiritilmasa ham bo'ladi — oddiy eslatma sifatida saqlanadi.
 - **Zametka summasi hisobotda sof foydadan ayriladi** — sanasi hisobot davriga tushadigan zametkalar yig'indisi ayriladi.
 - Summasiz zametkalar faqat eslatma bo'lib qoladi (foydaga ta'sir qilmaydi).
+
+### 📤 Topshirilgan atchot
+- Zametkalarda «✅ Atchot topshirildi» belgilangan yozuvlar shu bo'limga yig'iladi.
+- Sana oralig'i paneli (Bugun / Hafta / Oy / Jami / Oraliq) bo'yicha filtr.
+- **Davr summasi** va **jami topshirilgan** summa alohida ko'rsatiladi.
+- Har bir yozuv yonidagi **↩** bilan belgilashni bekor qilib, zametkalarga qaytarish mumkin.
+- Bu yozuvlar hisobotda avvalgidek xarajat sifatida hisoblanadi.
 
 ### 📊 Hisobotlar
 - **Kunlik / Haftalik / Oylik / Jami** tablar.

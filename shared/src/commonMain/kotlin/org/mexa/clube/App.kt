@@ -26,6 +26,7 @@ import org.mexa.clube.ui.screens.HistoryScreen
 import org.mexa.clube.ui.screens.NotesScreen
 import org.mexa.clube.ui.screens.ReportsScreen
 import org.mexa.clube.ui.screens.SettingsScreen
+import org.mexa.clube.ui.screens.SubmittedReportScreen
 import org.mexa.clube.ui.screens.TablesScreen
 import org.mexa.clube.ui.theme.Pro
 import org.mexa.clube.ui.theme.ProTheme
@@ -54,10 +55,11 @@ fun App(vm: AppViewModel) {
                         0 -> TablesScreen(vm)
                         1 -> BarScreen(vm)
                         2 -> ReportsScreen(vm)
-                        3 -> ExpensesScreen(vm)
-                        4 -> NotesScreen(vm)
-                        5 -> HistoryScreen(vm)
-                        6 -> SettingsScreen(vm)
+                        3 -> SubmittedReportScreen(vm)
+                        4 -> ExpensesScreen(vm)
+                        5 -> NotesScreen(vm)
+                        6 -> HistoryScreen(vm)
+                        7 -> SettingsScreen(vm)
                     }
                 }
             }

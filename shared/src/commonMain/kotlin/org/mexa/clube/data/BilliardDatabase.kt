@@ -47,13 +47,14 @@ import org.mexa.clube.data.entity.TableSession
         Note::class,
         SessionPart::class
     ],
-    version = 6,
+    version = 7,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5),
-        AutoMigration(from = 5, to = 6)
+        AutoMigration(from = 5, to = 6),
+        AutoMigration(from = 6, to = 7)
     ],
     exportSchema = true
 )
@@ -76,7 +77,7 @@ abstract class BilliardDatabase : RoomDatabase() {
         const val DB_NAME = "billiard_club.db"
 
         /** Joriy sxema versiyasi (Room `version` bilan bir xil bo'lishi shart). */
-        const val DB_VERSION = 6
+        const val DB_VERSION = 7
     }
 }
 

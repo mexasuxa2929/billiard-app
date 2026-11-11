@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -57,7 +58,7 @@ import org.mexa.clube.ui.theme.StatChip
 import org.mexa.clube.ui.theme.TableHeaderCell
 import org.mexa.clube.ui.viewmodel.AppViewModel
 
-private val NOTE_FILTERS = listOf("Hammasi", "Kelayotgan", "O'tgan")
+private val NOTE_FILTERS = listOf("Hammasi", "Kelayotgan", "O'tgan", "Topshirilgan")
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -78,6 +79,7 @@ fun NotesScreen(vm: AppViewModel) {
             val matchesFilter = when (filter) {
                 "Kelayotgan" -> n.noteDate >= todayStart
                 "O'tgan" -> n.noteDate < todayStart
+                "Topshirilgan" -> n.handedOver
                 else -> true
             }
             range.contains(n.noteDate) && matchesFilter && (search.isBlank() ||
@@ -108,6 +110,7 @@ fun NotesScreen(vm: AppViewModel) {
             StatChip("Jami:", "${notes.size} ta")
             StatChip("Davr:", "${rangeNotes.size} ta")
             StatChip("Davr summasi:", formatMoney(rangeSum), Pro.Amber)
+            StatChip("Topshirilgan:", formatMoney(notes.filter { it.handedOver }.sumOf { it.amount }), Pro.Green)
             StatChip("Kelayotgan:", "${upcoming.size} ta", Pro.Amber)
             StatChip("Kelayotgan summa:", formatMoney(upcomingSum), Pro.Amber)
             ProButton("Zametka qo'shish", { showAdd = true }, "+")
@@ -122,7 +125,8 @@ fun NotesScreen(vm: AppViewModel) {
         )
 
         Text(
-            "Zametka summasi hisobotda sof foydadan ayriladi (sana bo'yicha hisobga olinadi).",
+            "Zametka summasi hisobotda sof foydadan ayriladi. «✅ Atchot topshirildi» belgilansa, " +
+                "summa alohida «Topshirilgan atchot» bo'limida ham hisoblanadi.",
             color = Pro.TextFaint, fontSize = 11.sp
         )
 
@@ -237,6 +241,9 @@ private fun NoteRow(n: Note, todayStart: Long, onEdit: () -> Unit, onDelete: () 
                 n.note, color = Pro.TextFaint, fontSize = 11.sp,
                 maxLines = 1, overflow = TextOverflow.Ellipsis
             )
+            if (n.handedOver) Text(
+                "✅ Atchot topshirildi", color = Pro.Green, fontSize = 10.sp, fontWeight = FontWeight.Bold
+            )
         }
         Text(
             if (n.amount > 0) formatMoney(n.amount) else "—",
@@ -271,6 +278,7 @@ private fun NoteCard(n: Note, todayStart: Long, onEdit: () -> Unit, onDelete: ()
                         fontSize = 11.sp
                     )
                     if (upcoming) NotePill("Kelayotgan")
+                    if (n.handedOver) NotePill("✅ Topshirildi", Pro.Green, Pro.GreenBg)
                 }
             }
             Text(
@@ -295,13 +303,17 @@ private fun NoteCard(n: Note, todayStart: Long, onEdit: () -> Unit, onDelete: ()
 }
 
 @Composable
-private fun NotePill(text: String) {
+private fun NotePill(
+    text: String,
+    color: Color = Pro.Amber,
+    background: Color = Pro.AmberBg
+) {
     Box(
-        Modifier.background(Pro.AmberBg, RoundedCornerShape(8.dp))
-            .border(1.dp, Color(0xFF6B4E12), RoundedCornerShape(8.dp))
+        Modifier.background(background, RoundedCornerShape(8.dp))
+            .border(1.dp, color.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
             .padding(horizontal = 7.dp, vertical = 3.dp)
     ) {
-        Text(text, color = Pro.Amber, fontSize = 10.sp, maxLines = 1)
+        Text(text, color = color, fontSize = 10.sp, maxLines = 1)
     }
 }
 
@@ -329,6 +341,7 @@ private fun NoteDialog(
         )
     }
     var note by remember { mutableStateOf(initial?.note ?: "") }
+    var handedOver by remember { mutableStateOf(initial?.handedOver ?: false) }
     var dateMillis by remember { mutableStateOf(initial?.noteDate ?: startOfDay(currentMillis())) }
     var dateOpen by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -350,6 +363,7 @@ private fun NoteDialog(
                 reason = reason.trim(),
                 amount = sum,
                 note = note.trim(),
+                handedOver = handedOver,
                 createdAt = initial?.createdAt ?: 0L
             )
         )
@@ -401,6 +415,20 @@ private fun NoteDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+                Row(
+                    Modifier.fillMaxWidth().clickable { handedOver = !handedOver },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Checkbox(checked = handedOver, onCheckedChange = { handedOver = it })
+                    Column(Modifier.weight(1f)) {
+                        Text("✅ Atchot topshirildi", color = Pro.TextMain, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            "Belgilansa, summa «Topshirilgan atchot» bo'limiga o'tadi.",
+                            color = Pro.TextFaint, fontSize = 11.sp
+                        )
+                    }
+                }
                 if (error != null) Text(error!!, color = Pro.Red, fontSize = 12.sp)
             }
         },

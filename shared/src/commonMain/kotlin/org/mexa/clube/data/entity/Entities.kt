@@ -165,6 +165,9 @@ data class Note(
     val amount: Double = 0.0,
     /** Qo'shimcha izoh (ixtiyoriy). */
     val note: String = "",
+    /** Atchot topshirilgan deb belgilanganmi — summa «Topshirilgan atchot» bo'limiga o'tadi. */
+    @ColumnInfo(defaultValue = "0")
+    val handedOver: Boolean = false,
     val createdAt: Long = 0L
 )
 

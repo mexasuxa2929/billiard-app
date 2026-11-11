@@ -32,6 +32,7 @@ val menuItems = listOf(
     MenuEntry("🎱", "Stollar"),
     MenuEntry("🍺", "Bar"),
     MenuEntry("📊", "Hisobotlar"),
+    MenuEntry("📤", "Topshirilgan atchot"),
     MenuEntry("💸", "Xarajatlar"),
     MenuEntry("📝", "Zametkalar"),
     MenuEntry("🧾", "Tarix / Jurnal"),
