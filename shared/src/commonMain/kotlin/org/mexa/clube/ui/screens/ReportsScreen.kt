@@ -118,8 +118,12 @@ fun ReportsScreen(vm: AppViewModel) {
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         StatPro(
-                            "📈 Sof foyda", formatMoney(r.submitted), Pro.Green, Modifier.weight(1f),
-                            subtitle = "topshirilgan atchot"
+                            "📤 Atchotlar", formatMoney(r.submitted), Pro.Green, Modifier.weight(1f),
+                            subtitle = "topshirilgan"
+                        )
+                        StatPro(
+                            "📈 Sof foyda", formatMoney(r.netProfit), Pro.Green, Modifier.weight(1f),
+                            subtitle = "daromad − xarajat − zametka"
                         )
                     }
                 }
@@ -143,8 +147,12 @@ fun ReportsScreen(vm: AppViewModel) {
                         subtitle = "faol yozuvlar"
                     )
                     StatPro(
-                        "📈 Sof foyda", formatMoney(r.submitted), Pro.Green, Modifier.weight(1f),
-                        subtitle = "topshirilgan atchot"
+                        "📤 Atchotlar", formatMoney(r.submitted), Pro.Green, Modifier.weight(1f),
+                        subtitle = "topshirilgan"
+                    )
+                    StatPro(
+                        "📈 Sof foyda", formatMoney(r.netProfit), Pro.Green, Modifier.weight(1f),
+                        subtitle = "daromad − xarajat − zametka"
                     )
                 }
             }
@@ -156,7 +164,8 @@ fun ReportsScreen(vm: AppViewModel) {
                 "Stollar — faqat vaqt puli. Bar savdo/foyda stolga biriktirilgan savdoni ham o'z ichiga oladi " +
                     "(stol yopilganda hisobga olinadi, bekor qilingan sessiyalar kirmaydi). " +
                     "JAMI daromad = Stollar + Bar savdo − chegirma; " +
-                    "Sof foyda = shu davrda topshirilgan atchot summasi. " +
+                    "Sof foyda = JAMI daromad − xarajatlar − zametkalar. " +
+                    "Atchotlar = shu davrda topshirilgan atchot summasi. " +
                     "Zametkalar qatorida faqat zametkada qolgan yozuvlar ko'rsatiladi. " +
                     "Bar summasi ikki marta hisoblanmaydi.",
                 color = Pro.TextFaint, fontSize = 11.sp

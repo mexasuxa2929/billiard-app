@@ -326,9 +326,9 @@ class ReportTest {
         assertEquals(-5000.0, nextDay.netProfit)
     }
 
-    /** Atchotga topshirilgan yozuvlar zametkalar summasidan chiqadi va «Sof foyda» bo'ladi. */
+    /** Atchotga topshirilgan yozuvlar «Atchotlar» yacheykasiga chiqadi, sof foydadan ayrilmaydi. */
     @Test
-    fun submittedNoteIsReportedAsSofFoyda() = runBlocking {
+    fun submittedNoteIsReportedSeparately() = runBlocking {
         val db = newDb()
         val repo = BilliardRepository(db)
         val base = startOfDay(currentMillis())
@@ -341,7 +341,7 @@ class ReportTest {
         val r = repo.report(base, base + DAY)
         assertEquals(5_000.0, r.notes, "faqat faol zametka ayriladi")
         assertEquals(20_000.0, r.submitted, "topshirilgan atchot summasi")
-        assertEquals(55_000.0, r.netProfit, "sof foyda faol zametkani ayrilgan holda")
+        assertEquals(55_000.0, r.netProfit, "sof foyda = daromad − xarajat − faol zametka")
     }
 
     // ---------- helpers ----------

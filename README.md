@@ -60,12 +60,12 @@ Bilyard xonasini boshqarish uchun desktop app.
 - Har bir yozuv yonida:
   - **↩** — zametkalarga qaytarish (atchotdan chiqarish);
   - **🗑** — xato yozuvni butunlay o'chirish (tasdiqlash bilan).
-- **Bu summa hisobotlarda «Sof foyda» sifatida ko'rsatiladi.**
+- **Bu summa hisobotlarda «📤 Atchotlar» yacheykasida ko'rsatiladi.**
 
 ### 📊 Hisobotlar
 - **Kunlik / Haftalik / Oylik / Jami** tablar.
 - Kartalar: Stol daromadi, Bar savdo, Bar foydasi (sotish−kirish), JAMI daromad,
-  Xarajatlar, faol Zametkalar va **Sof foyda = shu davrda topshirilgan atchot summasi**.
+  Xarajatlar, faol Zametkalar, **Atchotlar** va **Sof foyda**.
 - Sessiyalar soni, chegirmalar, TOP-10 mahsulot, cheklar ro'yxati.
 - Xato yozilgan chekni **🗑 o'chirish** (tasdiqlash bilan). Faqat chek yozuvi o'chadi —
   sessiya/savdo summasi hisobotda qoladi.
@@ -77,7 +77,8 @@ Bilyard xonasini boshqarish uchun desktop app.
   bekor qilingan sessiyalarning savdosi esa hisobotga kirmaydi.
 - **JAMI daromad = Stollar + Bar savdo − chegirma.** Stol kartasidagi jami summada bar bo'lsa ham,
   u bar qatorida bir marta hisoblanadi — ikki marta qo'shilmaydi.
-- **Sof foyda = shu davrda topshirilgan atchot summasi** (eski hisoblangan sof foyda kartasi olib tashlandi).
+- **Sof foyda = JAMI daromad − xarajatlar − zametkalar** (faqat zametkada qolgan yozuvlar ayriladi).
+- **Atchotlar = shu davrda topshirilgan atchot summasi** (alohida yacheyka).
 - **Zametkalar** kartasida faqat zametkada qolgan (o'tkazilmagan) yozuvlar yig'indisi ko'rsatiladi —
   atchotga topshirilganlar sof foyda bo'ladi, xarajatga o'tkazilganlar xarajatlar qatorida hisoblanadi.
 - Hisobotda "stolga" va "alohida" savdo yorliqlari ko'rsatiladi, Excelda ham shu taqsimot bor.
