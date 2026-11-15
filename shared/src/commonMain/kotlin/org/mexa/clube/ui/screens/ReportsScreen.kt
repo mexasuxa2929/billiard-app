@@ -118,12 +118,12 @@ fun ReportsScreen(vm: AppViewModel) {
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         StatPro(
-                            "📤 Atchotlar", formatMoney(r.submitted), Pro.Green, Modifier.weight(1f),
-                            subtitle = "topshirilgan"
-                        )
-                        StatPro(
                             "📈 Sof foyda", formatMoney(r.netProfit), Pro.Green, Modifier.weight(1f),
                             subtitle = "daromad − xarajat − zametka"
+                        )
+                        StatPro(
+                            "📤 Atchotlar", formatMoney(r.submitted), Pro.Green, Modifier.weight(1f),
+                            subtitle = "topshirilgan"
                         )
                     }
                 }
@@ -147,12 +147,12 @@ fun ReportsScreen(vm: AppViewModel) {
                         subtitle = "faol yozuvlar"
                     )
                     StatPro(
-                        "📤 Atchotlar", formatMoney(r.submitted), Pro.Green, Modifier.weight(1f),
-                        subtitle = "topshirilgan"
-                    )
-                    StatPro(
                         "📈 Sof foyda", formatMoney(r.netProfit), Pro.Green, Modifier.weight(1f),
                         subtitle = "daromad − xarajat − zametka"
+                    )
+                    StatPro(
+                        "📤 Atchotlar", formatMoney(r.submitted), Pro.Green, Modifier.weight(1f),
+                        subtitle = "topshirilgan"
                     )
                 }
             }

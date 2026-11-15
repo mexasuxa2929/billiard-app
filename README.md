@@ -65,7 +65,7 @@ Bilyard xonasini boshqarish uchun desktop app.
 ### 📊 Hisobotlar
 - **Kunlik / Haftalik / Oylik / Jami** tablar.
 - Kartalar: Stol daromadi, Bar savdo, Bar foydasi (sotish−kirish), JAMI daromad,
-  Xarajatlar, faol Zametkalar, **Atchotlar** va **Sof foyda**.
+  Xarajatlar, faol Zametkalar, **Sof foyda** va **Atchotlar**.
 - Sessiyalar soni, chegirmalar, TOP-10 mahsulot, cheklar ro'yxati.
 - Xato yozilgan chekni **🗑 o'chirish** (tasdiqlash bilan). Faqat chek yozuvi o'chadi —
   sessiya/savdo summasi hisobotda qoladi.
