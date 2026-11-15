@@ -117,4 +117,24 @@ class NoteTest {
         repo.saveNote(saved.copy(handedOver = false))
         assertFalse(repo.notes.first().first().handedOver)
     }
+
+    @Test
+    fun noteMovedToExpenseLeavesNotesAndBecomesExpense() = runBlocking {
+        val db = newDb()
+        val repo = BilliardRepository(db)
+        val today = startOfDay(currentMillis())
+
+        repo.saveNote(Note(noteDate = today, reason = "Kreslo ta'miri", amount = 30_000.0))
+        val note = repo.notes.first().first()
+
+        repo.moveNoteToExpense(note)
+
+        val moved = repo.notes.first().first()
+        assertTrue(moved.movedToExpense, "zametka xarajatga o'tkazilgan deb belgilanadi")
+
+        val r = repo.report(today, today + DAY)
+        assertEquals(0.0, r.notes, "o'tkazilgan zametka zametkalar summasida qolmaydi")
+        assertEquals(30_000.0, r.expenses, "summa xarajatlar bo'limida hisoblanadi")
+        assertEquals(-30_000.0, r.netProfit, "summa faqat bir marta ayriladi")
+    }
 }

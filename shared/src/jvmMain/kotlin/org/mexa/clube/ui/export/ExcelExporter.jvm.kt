@@ -60,8 +60,8 @@ actual object ExcelExporter {
             kv(s0, 11, "— stolga biriktirilgan bar foyda", summary.barTableProfit, wb, moneyStyle)
             kv(s0, 12, "— to'g'ridan-to'g'ri bar foyda", summary.barDirectProfit, wb, moneyStyle)
             kv(s0, 13, "Xarajatlar (so'm)", summary.expenses, wb, moneyStyle)
-            kv(s0, 14, "Zametkalar (so'm)", summary.notes, wb, moneyStyle)
-            kv(s0, 15, "Sof foyda (so'm)", summary.netProfit, wb, moneyStyle)
+            kv(s0, 14, "Zametkalar — faol (so'm)", summary.notes, wb, moneyStyle)
+            kv(s0, 15, "Sof foyda — topshirilgan atchot (so'm)", summary.submitted, wb, moneyStyle)
             s0.setColumnWidth(0, 22 * 256)
             s0.setColumnWidth(1, 24 * 256)
 

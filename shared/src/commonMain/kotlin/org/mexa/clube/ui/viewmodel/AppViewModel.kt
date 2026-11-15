@@ -482,6 +482,14 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
         } catch (e: Exception) { _error.value = e.message }
     }
 
+    /** Zametkani xarajatlar bo'limiga o'tkazish (xarajat yozuvi yaratiladi). */
+    fun transferNoteToExpense(note: Note, onDone: () -> Unit = {}) = viewModelScope.launch {
+        try {
+            repo.moveNoteToExpense(note)
+            onDone()
+        } catch (e: Exception) { _error.value = e.message }
+    }
+
     /** Xato yozilgan chekni hisobotlar tarixidan o'chirish (faqat chek yozuvi). */
     fun deleteCheck(check: CheckReceipt, onDone: () -> Unit = {}) = viewModelScope.launch {
         try {

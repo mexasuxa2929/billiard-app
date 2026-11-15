@@ -31,6 +31,8 @@ Bilyard xonasini boshqarish uchun desktop app.
 
 ### 💸 Xarajatlar
 - Xarajat qo'shish: **sababi** (majburiy), kategoriya, summa, to'lov turi, sana va izoh.
+- Zametkalar bo'limidan **«💸 Xarajatga o'tkazish»** qilingan yozuvlar shu yerga avtomatik
+  xarajat sifatida tushadi (kategoriya — *Boshqa*, to'lov — *Naqd*).
 - Kategoriyalar: Oylik, Ijara, Kommunal, Ta'mirlash, Mahsulot, Transport, Boshqa.
 - Ro'yxatda qidiruv, kategoriya bo'yicha filtr, tahrirlash va o'chirish.
 - Sana oralig'i paneli: Bugun / Hafta / Oy / Jami / Oraliq bo'yicha filtr va davr summasi.
@@ -40,25 +42,30 @@ Bilyard xonasini boshqarish uchun desktop app.
 
 ### 📝 Zametkalar
 - Zametka qo'shish: **sana**, **sabab** (majburiy) va **qancha pul** + ixtiyoriy izoh.
-- Ro'yxatda qidiruv, «Kelayotgan / O'tgan / Topshirilgan» filtri, tahrirlash va **o'chirish**.
-- Zametka oynasida **«✅ Atchot topshirildi»** checkbox'i: belgilab saqlansa, summa
-  **«Topshirilgan atchot»** bo'limiga o'tadi.
+- Ro'yxatda qidiruv, «Kelayotgan / O'tgan» filtri, tahrirlash va **o'chirish**.
+- Saqlashda **«Qayerga o'tkazish?»** tanlovi:
+  - *📝 Zametkada qolsin* — yozuv shu ro'yxatda qoladi;
+  - *📤 Atchotga topshirish* — summa **«Topshirilgan atchot»** bo'limiga o'tadi;
+  - *💸 Xarajatga o'tkazish* — summa **«Xarajatlar»** bo'limiga xarajat sifatida yoziladi.
+- O'tkazilgan yozuvlar zametkalar ro'yxatida **qolmaydi** va bu yerdagi jami summalarga kirmaydi.
 - Yuqorida kelayotgan zametkalar soni va umumiy summasi ko'rsatiladi.
 - Summa kiritilmasa ham bo'ladi — oddiy eslatma sifatida saqlanadi.
 - **Zametka summasi hisobotda sof foydadan ayriladi** — sanasi hisobot davriga tushadigan zametkalar yig'indisi ayriladi.
 - Summasiz zametkalar faqat eslatma bo'lib qoladi (foydaga ta'sir qilmaydi).
 
 ### 📤 Topshirilgan atchot
-- Zametkalarda «✅ Atchot topshirildi» belgilangan yozuvlar shu bo'limga yig'iladi.
+- Zametkalarda «📤 Atchotga topshirish» qilingan yozuvlar shu bo'limga yig'iladi.
 - Sana oralig'i paneli (Bugun / Hafta / Oy / Jami / Oraliq) bo'yicha filtr.
 - **Davr summasi** va **jami topshirilgan** summa alohida ko'rsatiladi.
-- Har bir yozuv yonidagi **↩** bilan belgilashni bekor qilib, zametkalarga qaytarish mumkin.
-- Bu yozuvlar hisobotda avvalgidek xarajat sifatida hisoblanadi.
+- Har bir yozuv yonida:
+  - **↩** — zametkalarga qaytarish (atchotdan chiqarish);
+  - **🗑** — xato yozuvni butunlay o'chirish (tasdiqlash bilan).
+- **Bu summa hisobotlarda «Sof foyda» sifatida ko'rsatiladi.**
 
 ### 📊 Hisobotlar
 - **Kunlik / Haftalik / Oylik / Jami** tablar.
 - Kartalar: Stol daromadi, Bar savdo, Bar foydasi (sotish−kirish), JAMI daromad,
-  Xarajatlar, Zametkalar va Sof foyda.
+  Xarajatlar, faol Zametkalar va **Sof foyda = shu davrda topshirilgan atchot summasi**.
 - Sessiyalar soni, chegirmalar, TOP-10 mahsulot, cheklar ro'yxati.
 - Xato yozilgan chekni **🗑 o'chirish** (tasdiqlash bilan). Faqat chek yozuvi o'chadi —
   sessiya/savdo summasi hisobotda qoladi.
@@ -70,7 +77,9 @@ Bilyard xonasini boshqarish uchun desktop app.
   bekor qilingan sessiyalarning savdosi esa hisobotga kirmaydi.
 - **JAMI daromad = Stollar + Bar savdo − chegirma.** Stol kartasidagi jami summada bar bo'lsa ham,
   u bar qatorida bir marta hisoblanadi — ikki marta qo'shilmaydi.
-- **Sof foyda = JAMI daromad − xarajatlar − zametkalar.**
+- **Sof foyda = shu davrda topshirilgan atchot summasi** (eski hisoblangan sof foyda kartasi olib tashlandi).
+- **Zametkalar** kartasida faqat zametkada qolgan (o'tkazilmagan) yozuvlar yig'indisi ko'rsatiladi —
+  atchotga topshirilganlar sof foyda bo'ladi, xarajatga o'tkazilganlar xarajatlar qatorida hisoblanadi.
 - Hisobotda "stolga" va "alohida" savdo yorliqlari ko'rsatiladi, Excelda ham shu taqsimot bor.
 
 ### 📅 Sana oralig'i (barcha hisob sahifalarida)

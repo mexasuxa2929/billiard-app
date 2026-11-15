@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -58,7 +57,14 @@ import org.mexa.clube.ui.theme.StatChip
 import org.mexa.clube.ui.theme.TableHeaderCell
 import org.mexa.clube.ui.viewmodel.AppViewModel
 
-private val NOTE_FILTERS = listOf("Hammasi", "Kelayotgan", "O'tgan", "Topshirilgan")
+private val NOTE_FILTERS = listOf("Hammasi", "Kelayotgan", "O'tgan")
+
+/** Zametkani saqlashda qayerga yo'naltirish. */
+private enum class NoteTarget(val label: String) {
+    STAY("📝 Zametkada qolsin"),
+    SUBMITTED("📤 Atchotga topshirish"),
+    EXPENSE("💸 Xarajatga o'tkazish")
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -74,12 +80,14 @@ fun NotesScreen(vm: AppViewModel) {
 
     val todayStart = startOfDay(currentMillis())
 
-    val filtered = remember(notes, search, filter, todayStart, range) {
-        notes.filter { n ->
+    // Boshqa bo'limlarga o'tkazilgan yozuvlar zametkalar ro'yxatida ko'rinmaydi.
+    val activeNotes = remember(notes) { notes.filter { !it.handedOver && !it.movedToExpense } }
+
+    val filtered = remember(activeNotes, search, filter, todayStart, range) {
+        activeNotes.filter { n ->
             val matchesFilter = when (filter) {
                 "Kelayotgan" -> n.noteDate >= todayStart
                 "O'tgan" -> n.noteDate < todayStart
-                "Topshirilgan" -> n.handedOver
                 else -> true
             }
             range.contains(n.noteDate) && matchesFilter && (search.isBlank() ||
@@ -88,9 +96,9 @@ fun NotesScreen(vm: AppViewModel) {
         }
     }
 
-    val upcoming = notes.filter { it.noteDate >= todayStart }
+    val upcoming = activeNotes.filter { it.noteDate >= todayStart }
     val upcomingSum = upcoming.sumOf { it.amount }
-    val rangeNotes = remember(notes, range) { notes.filter { range.contains(it.noteDate) } }
+    val rangeNotes = remember(activeNotes, range) { activeNotes.filter { range.contains(it.noteDate) } }
     val rangeSum = rangeNotes.sumOf { it.amount }
     val filteredSum = filtered.sumOf { it.amount }
 
@@ -107,10 +115,9 @@ fun NotesScreen(vm: AppViewModel) {
                     fontSize = if (m.compact) 18.sp else 20.sp
                 )
             }
-            StatChip("Jami:", "${notes.size} ta")
+            StatChip("Jami:", "${activeNotes.size} ta")
             StatChip("Davr:", "${rangeNotes.size} ta")
             StatChip("Davr summasi:", formatMoney(rangeSum), Pro.Amber)
-            StatChip("Topshirilgan:", formatMoney(notes.filter { it.handedOver }.sumOf { it.amount }), Pro.Green)
             StatChip("Kelayotgan:", "${upcoming.size} ta", Pro.Amber)
             StatChip("Kelayotgan summa:", formatMoney(upcomingSum), Pro.Amber)
             ProButton("Zametka qo'shish", { showAdd = true }, "+")
@@ -125,8 +132,9 @@ fun NotesScreen(vm: AppViewModel) {
         )
 
         Text(
-            "Zametka summasi hisobotda sof foydadan ayriladi. «✅ Atchot topshirildi» belgilansa, " +
-                "summa alohida «Topshirilgan atchot» bo'limida ham hisoblanadi.",
+            "Zametka summasi hisobotda sof foydadan ayriladi. Saqlashda «Atchotga topshirish» tanlansa, " +
+                "summa «Topshirilgan atchot» bo'limiga o'tadi; «Xarajatga o'tkazish» tanlansa — " +
+                "«Xarajatlar» bo'limiga yoziladi. O'tkazilgan yozuv bu ro'yxatda qolmaydi.",
             color = Pro.TextFaint, fontSize = 11.sp
         )
 
@@ -200,14 +208,22 @@ fun NotesScreen(vm: AppViewModel) {
         }
     }
 
+    fun saveWithTarget(note: Note, target: NoteTarget, close: () -> Unit) {
+        when (target) {
+            NoteTarget.STAY -> vm.saveNote(note.copy(handedOver = false, movedToExpense = false)) { close() }
+            NoteTarget.SUBMITTED -> vm.saveNote(note.copy(handedOver = true, movedToExpense = false)) { close() }
+            NoteTarget.EXPENSE -> vm.transferNoteToExpense(note) { close() }
+        }
+    }
+
     if (showAdd) {
-        NoteDialog(initial = null, onDismiss = { showAdd = false }) {
-            vm.saveNote(it) { showAdd = false }
+        NoteDialog(initial = null, onDismiss = { showAdd = false }) { n, t ->
+            saveWithTarget(n, t) { showAdd = false }
         }
     }
     edit?.let { n ->
-        NoteDialog(initial = n, onDismiss = { edit = null }) {
-            vm.saveNote(it) { edit = null }
+        NoteDialog(initial = n, onDismiss = { edit = null }) { note, t ->
+            saveWithTarget(note, t) { edit = null }
         }
     }
     delete?.let { n ->
@@ -240,9 +256,6 @@ private fun NoteRow(n: Note, todayStart: Long, onEdit: () -> Unit, onDelete: () 
             if (n.note.isNotBlank()) Text(
                 n.note, color = Pro.TextFaint, fontSize = 11.sp,
                 maxLines = 1, overflow = TextOverflow.Ellipsis
-            )
-            if (n.handedOver) Text(
-                "✅ Atchot topshirildi", color = Pro.Green, fontSize = 10.sp, fontWeight = FontWeight.Bold
             )
         }
         Text(
@@ -278,7 +291,6 @@ private fun NoteCard(n: Note, todayStart: Long, onEdit: () -> Unit, onDelete: ()
                         fontSize = 11.sp
                     )
                     if (upcoming) NotePill("Kelayotgan")
-                    if (n.handedOver) NotePill("✅ Topshirildi", Pro.Green, Pro.GreenBg)
                 }
             }
             Text(
@@ -332,7 +344,7 @@ private fun NoteIcon(text: String, color: Color, bg: Color, onClick: () -> Unit)
 private fun NoteDialog(
     initial: Note?,
     onDismiss: () -> Unit,
-    onSave: (Note) -> Unit
+    onSave: (Note, NoteTarget) -> Unit
 ) {
     var reason by remember { mutableStateOf(initial?.reason ?: "") }
     var amount by remember {
@@ -341,7 +353,7 @@ private fun NoteDialog(
         )
     }
     var note by remember { mutableStateOf(initial?.note ?: "") }
-    var handedOver by remember { mutableStateOf(initial?.handedOver ?: false) }
+    var target by remember { mutableStateOf(NoteTarget.STAY) }
     var dateMillis by remember { mutableStateOf(initial?.noteDate ?: startOfDay(currentMillis())) }
     var dateOpen by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -356,6 +368,10 @@ private fun NoteDialog(
             error = "Summani to'g'ri kiriting"
             return
         }
+        if (target != NoteTarget.STAY && sum <= 0.0) {
+            error = "O'tkazish uchun summa kiritilishi kerak"
+            return
+        }
         onSave(
             Note(
                 id = initial?.id ?: 0L,
@@ -363,9 +379,11 @@ private fun NoteDialog(
                 reason = reason.trim(),
                 amount = sum,
                 note = note.trim(),
-                handedOver = handedOver,
+                handedOver = initial?.handedOver ?: false,
+                movedToExpense = initial?.movedToExpense ?: false,
                 createdAt = initial?.createdAt ?: 0L
-            )
+            ),
+            target
         )
     }
 
@@ -415,19 +433,30 @@ private fun NoteDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                Row(
-                    Modifier.fillMaxWidth().clickable { handedOver = !handedOver },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Checkbox(checked = handedOver, onCheckedChange = { handedOver = it })
-                    Column(Modifier.weight(1f)) {
-                        Text("✅ Atchot topshirildi", color = Pro.TextMain, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            "Belgilansa, summa «Topshirilgan atchot» bo'limiga o'tadi.",
-                            color = Pro.TextFaint, fontSize = 11.sp
-                        )
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(
+                        "Qayerga o'tkazish?",
+                        color = Pro.TextMain, fontSize = 13.sp, fontWeight = FontWeight.Bold
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        NoteTarget.entries.forEach { t ->
+                            CategoryPill(t.label, target == t) { target = t; error = null }
+                        }
                     }
+                    Text(
+                        when (target) {
+                            NoteTarget.STAY ->
+                                "Zametka shu bo'limda qoladi va hisobotda sof foydadan ayriladi."
+                            NoteTarget.SUBMITTED ->
+                                "Summa «Topshirilgan atchot» bo'limiga o'tadi va hisobotda sof foyda sifatida ko'rsatiladi."
+                            NoteTarget.EXPENSE ->
+                                "Summa «Xarajatlar» bo'limiga xarajat sifatida yoziladi va zametkalardan yo'qoladi."
+                        },
+                        color = Pro.TextFaint, fontSize = 11.sp
+                    )
                 }
                 if (error != null) Text(error!!, color = Pro.Red, fontSize = 12.sp)
             }

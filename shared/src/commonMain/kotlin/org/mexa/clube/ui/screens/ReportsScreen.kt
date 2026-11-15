@@ -113,11 +113,14 @@ fun ReportsScreen(vm: AppViewModel) {
                         StatPro("💸 Xarajatlar", formatMoney(r.expenses), Pro.Red, Modifier.weight(1f))
                         StatPro(
                             "📝 Zametkalar", formatMoney(r.notes), Pro.Red, Modifier.weight(1f),
-                            subtitle = "foydadan ayriladi"
+                            subtitle = "faol yozuvlar"
                         )
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatPro("📈 Sof foyda", formatMoney(r.netProfit), Pro.Green, Modifier.weight(1f))
+                        StatPro(
+                            "📈 Sof foyda", formatMoney(r.submitted), Pro.Green, Modifier.weight(1f),
+                            subtitle = "topshirilgan atchot"
+                        )
                     }
                 }
             } else {
@@ -137,9 +140,12 @@ fun ReportsScreen(vm: AppViewModel) {
                     StatPro("💸 Xarajatlar", formatMoney(r.expenses), Pro.Red, Modifier.weight(1f))
                     StatPro(
                         "📝 Zametkalar", formatMoney(r.notes), Pro.Red, Modifier.weight(1f),
-                        subtitle = "foydadan ayriladi"
+                        subtitle = "faol yozuvlar"
                     )
-                    StatPro("📈 Sof foyda", formatMoney(r.netProfit), Pro.Green, Modifier.weight(1f))
+                    StatPro(
+                        "📈 Sof foyda", formatMoney(r.submitted), Pro.Green, Modifier.weight(1f),
+                        subtitle = "topshirilgan atchot"
+                    )
                 }
             }
             Text(
@@ -150,7 +156,8 @@ fun ReportsScreen(vm: AppViewModel) {
                 "Stollar — faqat vaqt puli. Bar savdo/foyda stolga biriktirilgan savdoni ham o'z ichiga oladi " +
                     "(stol yopilganda hisobga olinadi, bekor qilingan sessiyalar kirmaydi). " +
                     "JAMI daromad = Stollar + Bar savdo − chegirma; " +
-                    "Sof foyda = JAMI daromad − xarajatlar − zametkalar. " +
+                    "Sof foyda = shu davrda topshirilgan atchot summasi. " +
+                    "Zametkalar qatorida faqat zametkada qolgan yozuvlar ko'rsatiladi. " +
                     "Bar summasi ikki marta hisoblanmaydi.",
                 color = Pro.TextFaint, fontSize = 11.sp
             )

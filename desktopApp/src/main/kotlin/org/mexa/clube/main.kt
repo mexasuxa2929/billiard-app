@@ -31,7 +31,7 @@ fun main() = application {
             runCatching { db.close() }
             exitApplication()
         },
-        title = "Billiard Club Manager v2.6.6 Pro",
+        title = "Billiard Club Manager v2.7.0 Pro",
         state = state
     ) {
         // UI shu o'lchamdan kichik bo'lsa ham buzilmaydi, lekin

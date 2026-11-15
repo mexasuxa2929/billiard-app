@@ -35,6 +35,7 @@ import org.mexa.clube.data.entity.Note
 import org.mexa.clube.domain.formatDate
 import org.mexa.clube.domain.formatMoney
 import org.mexa.clube.ui.ResponsiveScreen
+import org.mexa.clube.ui.components.ConfirmDialog
 import org.mexa.clube.ui.components.DateRangeBar
 import org.mexa.clube.ui.components.DateRangePreset
 import org.mexa.clube.ui.components.allRange
@@ -46,9 +47,10 @@ import org.mexa.clube.ui.viewmodel.AppViewModel
 /**
  * «Topshirilgan atchot» bo'limi.
  *
- * Zametkalar bo'limida «✅ Atchot topshirildi» belgilangan yozuvlar shu yerga
+ * Zametkalar bo'limida «Atchotga topshirish» qilingan yozuvlar shu yerga
  * yig'iladi: sana oralig'i bo'yicha ro'yxat va umumiy topshirilgan summa.
- * Belgilashni bekor qilish (↩) bilan yozuv zametkalarga qaytadi.
+ * Bu summa hisobotlarda «Sof foyda» sifatida ko'rsatiladi.
+ * Xato yozuvni o'chirish (🗑) yoki zametkalarga qaytarish (↩) mumkin.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -56,6 +58,7 @@ fun SubmittedReportScreen(vm: AppViewModel) {
     val notes by vm.notes.collectAsState()
     var preset by remember { mutableStateOf(DateRangePreset.ALL) }
     var range by remember { mutableStateOf(allRange()) }
+    var toDelete by remember { mutableStateOf<Note?>(null) }
 
     val submitted = remember(notes, range) {
         notes.filter { it.handedOver && range.contains(it.noteDate) }
@@ -89,8 +92,8 @@ fun SubmittedReportScreen(vm: AppViewModel) {
         )
 
         Text(
-            "Bu yerda faqat zametkalarda «✅ Atchot topshirildi» deb belgilangan summalar yig'iladi. " +
-                "Ular hisobotda avvalgidek xarajat sifatida hisoblanadi.",
+            "Bu yerda atchotga topshirilgan summalar yig'iladi va hisobotlarda «Sof foyda» sifatida " +
+                "ko'rsatiladi. Xato yozuvni 🗑 bilan o'chirish yoki ↩ bilan zametkalarga qaytarish mumkin.",
             color = Pro.TextFaint, fontSize = 11.sp
         )
 
@@ -104,7 +107,7 @@ fun SubmittedReportScreen(vm: AppViewModel) {
                         ) {
                             Text("Hali topshirilgan atchot yo'q", color = Pro.TextFaint, fontSize = 13.sp)
                             Text(
-                                "Zametkalar bo'limida zametkani tahrirlab, «✅ Atchot topshirildi» ni belgilang.",
+                                "Zametkalar bo'limida yozuvni tahrirlab, «📤 Atchotga topshirish» ni tanlang.",
                                 color = Pro.TextFaint, fontSize = 11.sp
                             )
                         }
@@ -112,7 +115,11 @@ fun SubmittedReportScreen(vm: AppViewModel) {
                 } else {
                     LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
                         items(submitted, key = { it.id }) { n ->
-                            SubmittedRow(n, onReturn = { vm.saveNote(n.copy(handedOver = false)) })
+                            SubmittedRow(
+                                n,
+                                onReturn = { vm.saveNote(n.copy(handedOver = false)) },
+                                onDelete = { toDelete = n }
+                            )
                             HorizontalDivider(color = Pro.CardBorder.copy(alpha = 0.5f), thickness = 1.dp)
                         }
                     }
@@ -132,10 +139,20 @@ fun SubmittedReportScreen(vm: AppViewModel) {
             }
         }
     }
+
+    toDelete?.let { n ->
+        ConfirmDialog(
+            title = "Topshirilgan atchotni o'chirish?",
+            message = "«${n.reason}»${if (n.amount > 0) " (${formatMoney(n.amount)})" else ""} butunlay " +
+                "o'chiriladi va hisobotdagi «Sof foyda» dan ham chiqadi. Davom etasizmi?",
+            onDismiss = { toDelete = null },
+            onConfirm = { vm.deleteNote(n.id) { toDelete = null } }
+        )
+    }
 }
 
 @Composable
-private fun SubmittedRow(n: Note, onReturn: () -> Unit) {
+private fun SubmittedRow(n: Note, onReturn: () -> Unit, onDelete: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -171,5 +188,12 @@ private fun SubmittedRow(n: Note, onReturn: () -> Unit) {
                 .padding(horizontal = 9.dp, vertical = 7.dp),
             contentAlignment = Alignment.Center
         ) { Text("↩", color = Pro.TextDim, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+        Box(
+            Modifier.background(Pro.RedBg, RoundedCornerShape(8.dp))
+                .border(1.dp, Pro.Red.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                .clickable { onDelete() }
+                .padding(horizontal = 9.dp, vertical = 7.dp),
+            contentAlignment = Alignment.Center
+        ) { Text("🗑", color = Pro.Red, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
     }
 }

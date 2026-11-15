@@ -326,6 +326,24 @@ class ReportTest {
         assertEquals(-5000.0, nextDay.netProfit)
     }
 
+    /** Atchotga topshirilgan yozuvlar zametkalar summasidan chiqadi va «Sof foyda» bo'ladi. */
+    @Test
+    fun submittedNoteIsReportedAsSofFoyda() = runBlocking {
+        val db = newDb()
+        val repo = BilliardRepository(db)
+        val base = startOfDay(currentMillis())
+        insertSession(db, start = base + 10 * H, end = base + 11 * H, tableSum = 60_000.0, discount = 0.0)
+        db.noteDao().upsert(
+            Note(noteDate = base + 12 * H, reason = "Kunlik atchot", amount = 20_000.0, handedOver = true)
+        )
+        db.noteDao().upsert(Note(noteDate = base + 13 * H, reason = "Faol zametka", amount = 5_000.0))
+
+        val r = repo.report(base, base + DAY)
+        assertEquals(5_000.0, r.notes, "faqat faol zametka ayriladi")
+        assertEquals(20_000.0, r.submitted, "topshirilgan atchot summasi")
+        assertEquals(55_000.0, r.netProfit, "sof foyda faol zametkani ayrilgan holda")
+    }
+
     // ---------- helpers ----------
 
     private suspend fun insertSession(

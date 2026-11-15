@@ -410,6 +410,40 @@ class BilliardRepository(
         if (note != null) log("NOTE", "Zametka o'chirildi: ${note.reason}", note.amount)
     }
 
+    /**
+     * Zametkani «Xarajatlar» bo'limiga o'tkazadi: xarajat yozuvi yaratiladi va
+     * zametka `movedToExpense = true` bilan belgilanadi (ro'yxatda ko'rinmaydi).
+     * Hisobotda summa ikki marta hisoblanmaydi — faqat xarajat sifatida ayriladi.
+     */
+    suspend fun moveNoteToExpense(note: Note): Long {
+        require(note.amount > 0.0) { "Xarajatga o'tkazish uchun summa 0 dan katta bo'lishi kerak" }
+        if (note.id != 0L) {
+            val current = db.noteDao().getById(note.id)
+            require(current == null || (!current.handedOver && !current.movedToExpense)) {
+                "Zametka allaqachon boshqa bo'limga o'tkazilgan"
+            }
+        }
+        val expenseId = saveExpense(
+            Expense(
+                spentAt = note.noteDate,
+                reason = note.reason,
+                category = "Boshqa",
+                amount = note.amount,
+                paymentMethod = "Naqd",
+                note = note.note
+            )
+        )
+        db.noteDao().upsert(
+            note.copy(
+                movedToExpense = true,
+                handedOver = false,
+                createdAt = if (note.createdAt == 0L) currentMillis() else note.createdAt
+            )
+        )
+        log("NOTE", "Zametka xarajatlarga o'tkazildi: ${note.reason}", note.amount)
+        return expenseId
+    }
+
     // ---------- Reports ----------
     suspend fun report(from: Long, to: Long): ReportSummary {
         val sessions = db.sessionDao().getBetween(from, to).filter { it.status == "CLOSED" }
@@ -421,8 +455,14 @@ class BilliardRepository(
         val tableRev = sessions.sumOf { it.tableSum }
         val discount = sessions.sumOf { it.discount }
         val expenseTotal = db.expenseDao().getBetween(from, to).sumOf { it.amount }
-        // Zametkalar summalari ham sof foydadan ayriladi (sana bo'yicha davr ichida).
-        val noteTotal = db.noteDao().getBetween(from, to).sumOf { it.amount }
+        // Faqat zametkalarda qolgan yozuvlar sof foydadan ayriladi.
+        // Atchotga topshirilganlar — «Sof foyda» sifatida, xarajatga o'tkazilganlar esa
+        // xarajatlar qatorida hisoblanadi (ikki marta ayrilmasligi uchun bu yerga kirmaydi).
+        val notesInRange = db.noteDao().getBetween(from, to)
+        val noteTotal = notesInRange
+            .filter { !it.handedOver && !it.movedToExpense }
+            .sumOf { it.amount }
+        val submittedTotal = notesInRange.filter { it.handedOver }.sumOf { it.amount }
 
         var barTableRev = 0.0
         var barTableCost = 0.0
@@ -461,6 +501,7 @@ class BilliardRepository(
             totalRevenue = tableRev + barRev - discount,
             expenses = expenseTotal,
             notes = noteTotal,
+            submitted = submittedTotal,
             netProfit = tableRev + barRev - discount - expenseTotal - noteTotal,
             topProducts = grouped
         )

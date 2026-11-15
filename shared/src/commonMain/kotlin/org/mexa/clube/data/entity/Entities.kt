@@ -168,6 +168,9 @@ data class Note(
     /** Atchot topshirilgan deb belgilanganmi — summa «Topshirilgan atchot» bo'limiga o'tadi. */
     @ColumnInfo(defaultValue = "0")
     val handedOver: Boolean = false,
+    /** Xarajatlar bo'limiga o'tkazilganmi — zametkalar ro'yxatida ko'rinmaydi. */
+    @ColumnInfo(defaultValue = "0")
+    val movedToExpense: Boolean = false,
     val createdAt: Long = 0L
 )
 
