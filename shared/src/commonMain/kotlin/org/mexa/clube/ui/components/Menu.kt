@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.mexa.clube.ui.theme.Pro
@@ -47,7 +48,7 @@ val menuItems = listOf(
 fun SideMenu(selected: Int, compact: Boolean = false, onSelect: (Int) -> Unit) {
     Column(
         Modifier.fillMaxHeight()
-            .width(if (compact) 64.dp else 232.dp)
+            .width(if (compact) 64.dp else 248.dp)
             .background(Pro.Sidebar)
             .padding(if (compact) 8.dp else 14.dp),
         horizontalAlignment = if (compact) Alignment.CenterHorizontally else Alignment.Start
@@ -100,21 +101,27 @@ fun SideMenu(selected: Int, compact: Boolean = false, onSelect: (Int) -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         if (sel) Box(Modifier.width(3.dp).height(18.dp).background(Pro.Green, RoundedCornerShape(2.dp)))
                         Text(m.icon, fontSize = 15.sp)
                         Text(
                             m.title,
                             color = if (sel) Pro.Green else Pro.TextDim,
                             fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     if (sel) Box(
-                        Modifier.background(Pro.GreenBg, RoundedCornerShape(6.dp))
-                            .border(1.dp, Pro.GreenBorder, RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                    ) { Text("Aktiv", color = Pro.Green, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+                        Modifier.padding(start = 8.dp)
+                            .size(8.dp)
+                            .background(Pro.Green, RoundedCornerShape(50))
+                    )
                 }
                 Spacer(Modifier.height(4.dp))
             }
