@@ -490,11 +490,16 @@ class AppViewModel(private val repo: BilliardRepository) : ViewModel() {
         } catch (e: Exception) { _error.value = e.message }
     }
 
-    /** Xato yozilgan chekni hisobotlar tarixidan o'chirish (faqat chek yozuvi). */
+    /**
+     * Xato yozilgan chekni o'chirish: chek bog'langan sessiya/savdo bekor qilinadi,
+     * shuning uchun hisobotdagi umumiy summalar ham qayta hisoblanadi.
+     */
     fun deleteCheck(check: CheckReceipt, onDone: () -> Unit = {}) = viewModelScope.launch {
         try {
             repo.deleteCheck(check.id)
             _checks.value = _checks.value.filterNot { it.id == check.id }
+            // Hisobotdagi jami summalar darhol yangilanadi.
+            _report.value?.let { r -> _report.value = repo.report(r.from, r.to) }
             onDone()
         } catch (e: Exception) { _error.value = e.message }
     }

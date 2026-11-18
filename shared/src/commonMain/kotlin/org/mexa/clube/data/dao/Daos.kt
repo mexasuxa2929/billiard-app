@@ -196,6 +196,9 @@ interface CheckDao {
     @Query("SELECT * FROM checks ORDER BY createdAt DESC LIMIT :limit")
     suspend fun getLast(limit: Int): List<CheckReceipt>
 
+    @Query("SELECT * FROM checks WHERE id = :id")
+    suspend fun getById(id: Long): CheckReceipt?
+
     @Query("DELETE FROM checks WHERE id = :id")
     suspend fun deleteById(id: Long)
 }

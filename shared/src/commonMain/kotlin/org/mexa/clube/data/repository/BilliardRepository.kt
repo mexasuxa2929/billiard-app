@@ -525,7 +525,44 @@ class BilliardRepository(
     }
 
     suspend fun checksBetween(from: Long, to: Long): List<CheckReceipt> = db.checkDao().getBetween(from, to)
-    suspend fun deleteCheck(id: Long) = db.checkDao().deleteById(id)
+    /**
+     * Xato chekni o'chirish. Chek bog'langan sessiya yoki to'g'ridan-to'g'ri bar savdosi
+     * bekor qilinadi — shunda summalar hisobotdan chiqadi. Stolga yozilgan bar mahsulotlari
+     * omborga qaytariladi.
+     */
+    suspend fun deleteCheck(id: Long) {
+        val check = db.checkDao().getById(id) ?: return
+        db.checkDao().deleteById(id)
+        val now = currentMillis()
+
+        check.sessionId?.let { sessionId ->
+            val session = db.sessionDao().getById(sessionId)
+            if (session != null && session.status != "CANCELLED") {
+                val sales = db.barSaleDao().getBySession(sessionId)
+                if (sales.isNotEmpty()) {
+                    db.barSaleDao().getItemsBySaleIds(sales.map { it.id })
+                        .forEach { db.productDao().increaseStock(it.productId, it.qty) }
+                }
+                db.barSaleDao().cancelForSession(sessionId, now)
+                db.sessionDao().update(
+                    session.copy(status = "CANCELLED", endTime = session.endTime ?: now)
+                )
+                log("TABLE_STOP", "${session.tableName} sessiya bekor qilindi (chek o'chirildi)", 0.0)
+            }
+        }
+
+        check.saleId?.let { saleId ->
+            val sale = db.barSaleDao().getSaleById(saleId)
+            if (sale != null && sale.status != "CANCELLED") {
+                db.barSaleDao().getItems(saleId)
+                    .forEach { db.productDao().increaseStock(it.productId, it.qty) }
+                db.barSaleDao().updateSale(sale.copy(status = "CANCELLED", closedAt = sale.closedAt ?: now))
+                log("BAR_SALE", "Bar savdosi bekor qilindi (chek o'chirildi): ${sale.totalSell.toLong()} so'm", sale.totalSell)
+            }
+        }
+
+        log("CHECK", "Chek o'chirildi #${check.id} (${check.tableName})", check.totalAmount)
+    }
     suspend fun sessionById(id: Long): TableSession? = db.sessionDao().getById(id)
     suspend fun closedSessionsBetween(from: Long, to: Long): List<TableSession> = db.sessionDao().getBetween(from, to)
     suspend fun lastChecks(limit: Int = 50): List<CheckReceipt> = db.checkDao().getLast(limit)

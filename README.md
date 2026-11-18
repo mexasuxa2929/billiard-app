@@ -67,8 +67,9 @@ Bilyard xonasini boshqarish uchun desktop app.
 - Kartalar: Stol daromadi, Bar savdo, Bar foydasi (sotish−kirish), JAMI daromad,
   Xarajatlar, faol Zametkalar, **Sof foyda** va **Atchotlar**.
 - Sessiyalar soni, chegirmalar, TOP-10 mahsulot, cheklar ro'yxati.
-- Xato yozilgan chekni **🗑 o'chirish** (tasdiqlash bilan). Faqat chek yozuvi o'chadi —
-  sessiya/savdo summasi hisobotda qoladi.
+- Xato yozilgan chekni **🗑 o'chirish** (tasdiqlash bilan). Chek bog'langan sessiya yoki
+  to'g'ridan-to'g'ri bar savdosi ham bekor qilinadi — summalar hisobotdan chiqadi, stolga
+  yozilgan bar mahsulotlari omborga qaytadi.
 
 **Hisobot qoidasi (chalkashmasligi uchun):**
 - **Stollar** kartasi — faqat vaqt puli (`tableSum`).

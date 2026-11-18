@@ -213,7 +213,8 @@ fun ReportsScreen(vm: AppViewModel) {
         ConfirmDialog(
             title = "Chekni o'chirish?",
             message = "#${c.id} ${c.tableName} • ${formatMoney(c.totalAmount)}\n\n" +
-                "Faqat chek yozuvi o'chiriladi — sessiya/savdo summasi hisobotda qoladi.",
+                "Chek bog'langan sessiya/savdo ham bekor qilinadi: summalar hisobotdan chiqadi, " +
+                "bar mahsulotlari omborga qaytadi.",
             onDismiss = { checkToDelete = null },
             onConfirm = { vm.deleteCheck(c) { checkToDelete = null } }
         )
