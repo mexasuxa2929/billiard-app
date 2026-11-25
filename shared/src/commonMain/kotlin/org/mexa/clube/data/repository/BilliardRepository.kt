@@ -172,7 +172,10 @@ class BilliardRepository(
             throw IllegalStateException("Partiya juda qisqa — kamida 10 soniya o'tishi kerak")
         }
         val minutes = Billing.durationMinutes(start, atMillis)
-        val amount = Billing.calculateTableCost(start, atMillis, session.hourlyRate)
+        // Partiya summasi 1000 ga pastga yaxlitlanadi: 15 833 → 15 000.
+        val amount = Billing.roundDownToThousand(
+            Billing.calculateTableCost(start, atMillis, session.hourlyRate)
+        )
         val part = SessionPart(
             sessionId = session.id,
             partNo = (parts.maxOfOrNull { it.partNo } ?: 0) + 1,
@@ -206,7 +209,13 @@ class BilliardRepository(
         // Oxirgi (davom etayotgan) partiyani ham yozib qo'yamiz — tarix to'liq bo'ladi.
         val partStart = Billing.currentPartStart(session.startTime, parts)
         val finalMinutes = Billing.durationMinutes(partStart, now)
-        val finalAmount = Billing.calculateTableCost(partStart, now, session.hourlyRate)
+        val closedSum = parts.sumOf { it.amount }
+        val rawFinal = Billing.calculateTableCost(partStart, now, session.hourlyRate)
+        // Stol hisobi 1000 ga pastga yaxlitlanadi: 15 833 → 15 000.
+        val tableCost = Billing.roundDownToThousand(closedSum + rawFinal)
+        // Oxirgi partiya summasini yaxlitlangan jami bilan moslashtiramiz —
+        // shunda partiyalar yig'indisi chekdagi stol summasiga teng bo'ladi.
+        val finalAmount = (tableCost - closedSum).coerceAtLeast(0.0)
         val finalPart = SessionPart(
             sessionId = session.id,
             partNo = (parts.maxOfOrNull { it.partNo } ?: 0) + 1,
@@ -217,9 +226,7 @@ class BilliardRepository(
             amount = finalAmount
         )
         db.sessionPartDao().insert(finalPart)
-        val partsTotal = parts.sumOf { it.amount } + finalAmount
         val partCount = parts.size + 1
-        val tableCost = partsTotal
         val sales = db.barSaleDao().getBySession(session.id)
         var barSell = 0.0
         var barBuy = 0.0

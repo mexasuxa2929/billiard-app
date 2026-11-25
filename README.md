@@ -13,6 +13,8 @@ Bilyard xonasini boshqarish uchun desktop app.
 - Stollar soni cheksiz: qo'shish / tahrirlash / o'chirish, har bir stolga alohida soatlik narx.
 - `Boshlash` → jonli taymer (1 soniyada yangilanadi) + hozirgi summa.
 - Hisoblash: **daqiqabay, ceil** — `cost = hourlyPrice * ceil(sec/60) / 60`, min 1 daqiqa.
+- Vaqt to'xtatilganda (partiya yopilganda yoki stol yakunlanganda) summa **1000 ga pastga yaxlitlanadi** —
+  masalan `15 833` → `15 000`, va bazaga ham shu yaxlitlangan ko'rinishda yoziladi.
 - **⏱ Taymerni yangilash (partiya)** → mijoz "taymerni yangila" desa:
   joriy partiya summasi hisoblanib yoziladi, taymer noldan boshlanadi.
   Har bir partiyaning vaqti/davomiyligi/summasi `📋 Ko'rish` oynasida ko'rinadi.

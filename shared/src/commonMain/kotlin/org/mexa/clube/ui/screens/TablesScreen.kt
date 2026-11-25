@@ -784,7 +784,9 @@ private fun CloseSessionDialog(ui: TableUi, onDismiss: () -> Unit, onConfirm: (D
     val now = currentMillis()
     val sess = ui.session
     // Stol hisobi: yopilgan partiyalar + hozir davom etayotgan partiya
-    val runningPart = if (sess != null) Billing.calculateTableCost(ui.partStart, now, sess.hourlyRate) else 0.0
+    val runningPart = if (sess != null) Billing.roundDownToThousand(
+        Billing.calculateTableCost(ui.partStart, now, sess.hourlyRate)
+    ) else 0.0
     val cost = ui.partsSum + runningPart
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -837,7 +839,7 @@ private fun CloseSessionDialog(ui: TableUi, onDismiss: () -> Unit, onConfirm: (D
 private fun PartsDialog(ui: TableUi, onDismiss: () -> Unit) {
     val now = currentMillis()
     val rate = ui.session?.hourlyRate ?: 0.0
-    val runningAmount = Billing.calculateTableCost(ui.partStart, now, rate)
+    val runningAmount = Billing.roundDownToThousand(Billing.calculateTableCost(ui.partStart, now, rate))
     val runningMinutes = Billing.durationMinutes(ui.partStart, now)
     val total = ui.partsSum + runningAmount
     AlertDialog(

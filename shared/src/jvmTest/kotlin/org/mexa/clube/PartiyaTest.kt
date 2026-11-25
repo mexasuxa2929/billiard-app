@@ -79,6 +79,25 @@ class PartiyaTest {
     }
 
     @Test
+    fun partAndSessionAmountsAreRoundedDownToThousand() = runBlocking {
+        val db = newDb()
+        val repo = BilliardRepository(db)
+        repo.addTable("Stol-5", 100_000.0)
+        val table = repo.tables.first().first()
+
+        val session = repo.startSession(table)
+        // 19 daqiqa: 100 000 * 19 / 60 = 31 666.67 → 31 000
+        val part = repo.startNewPart(table.id, atMillis = session.startTime + 19 * 60_000L)
+        assertEquals(31_000.0, part.amount, "partiya summasi 1000 ga pastga yaxlitlanadi")
+
+        val check = repo.closeSession(table.id, 0.0, "Naqd", "TEST")
+        val parts = repo.partsForSession(session.id)
+        assertEquals(parts.sumOf { it.amount }, check.tableAmount, "stol summasi partiyalar yig'indisiga teng")
+        assertEquals(0.0, check.tableAmount % 1000.0, "stol summasi 1000 ga karrali bo'lishi kerak")
+        assertEquals(32_000.0, check.tableAmount, "31 666.67 → 31 000 + 1 daqiqa → 32 000")
+    }
+
+    @Test
     fun sessionWithoutPartsIsBilledAsOne() = runBlocking {
         val db = newDb()
         val repo = BilliardRepository(db)

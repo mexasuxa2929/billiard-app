@@ -10,6 +10,7 @@ import org.mexa.clube.data.entity.CheckReceipt
 import org.mexa.clube.data.entity.SessionPart
 import org.mexa.clube.data.entity.TableSession
 import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -39,6 +40,12 @@ object Billing {
     fun roundToHundred(value: Double): Double = ceil(value / 100.0) * 100.0
 
     /**
+     * Summani pastga qarab 1000 ga yaxlitlaydi: 15 833 → 15 000.
+     * Stol vaqti to'xtatilganda (partiya yopilganda) qo'llanadi.
+     */
+    fun roundDownToThousand(value: Double): Double = floor(value / 1000.0) * 1000.0
+
+    /**
      * Joriy (ochiq) partiya boshlanishi: oxirgi yopilgan partiya tugagan vaqt,
      * partiya bo'lmasa — sessiya boshlangan vaqt.
      */
@@ -51,7 +58,8 @@ object Billing {
         currentStart: Long,
         nowMillis: Long,
         hourlyRate: Double
-    ): Double = closedParts.sumOf { it.amount } + calculateTableCost(currentStart, nowMillis, hourlyRate)
+    ): Double = closedParts.sumOf { it.amount } +
+        roundDownToThousand(calculateTableCost(currentStart, nowMillis, hourlyRate))
 }
 
 fun formatMoney(value: Double): String {
